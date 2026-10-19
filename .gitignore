@@ -1,0 +1,27 @@
+﻿# Godot 4+ ignores
+.godot/
+*.translation
+
+# Engine binaries and local editor data
+engine/
+*.exe
+*.dll
+
+# Local saves, logs, and runtime data
+save/
+runtime/
+*.log
+*.tmp
+*result*.json
+
+# Test screenshots and captures
+tests/*.png
+tests/*.jpg
+
+# OS & Editor generated files
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.vscode/
+.idea/
