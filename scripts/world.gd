@@ -1,5 +1,11 @@
 extends Node3D
 
+signal car_hit
+
+var pedestrian: CharacterBody3D
+var previous_pedestrian = Vector3.ZERO
+var traffic_enabled = false
+var pedestrians_paused = false
 var materials: Dictionary = {}
 var actors: Array = []
 var cars: Array = []
@@ -304,12 +310,24 @@ func neighborhood() -> void:
 		if i % 2:
 			c.rotation.y = PI
 		cars.append({"node": c, "speed": 4.0 + i, "dir": -1 if i % 2 else 1})
-	for i in range(9):
-		var a = actor("npc" if i % 3 else "rival", Vector3(-37 + i * 9, .17, 5.8 if i % 2 else -5.8))
+	var roster = load("res://scripts/neighbors.gd").ROSTER
+	for i in range(roster.size()):
+		var entry = roster[i]
+		var a = actor(entry.model, Vector3(entry.x, .17, entry.z))
 		a.set_meta("origin", a.position)
-		a.set_meta("walk", i % 2 == 0)
+		a.set_meta("walk", true)
 		a.set_meta("npc_id", i)
-		a.tint_clothes([Color("a17360"), Color("667e87"), Color("a48b58"), Color("7a6985")][i % 4])
+		a.set_meta("identity", entry.id)
+		a.set_meta("display_name", entry.name)
+		a.set_meta("span", entry.span)
+		a.set_meta("direction", 1.0 if i % 2 == 0 else -1.0)
+		a.set_meta("wait", float(i) * .17)
+		a.gesture = entry.gesture
+		if i >= 3:
+			a.tint_clothes([Color("a17360"), Color("667e87"), Color("a48b58"), Color("7a6985")][i % 4])
+		var tag = text3(a, entry.name, Vector3(0, 2.3, 0), 20)
+		tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		tag.visibility_range_end = 12
 	for x in [-58, 58]:
 		box(self, Vector3(x, 3, 0), Vector3(1, 6, 70), Color("897e7d"), true, "brick")
 	for z in [-28, 28]:
@@ -429,20 +447,47 @@ func create_portal(pos: Vector3) -> Node3D:
 	text3(portal, "A PRÓXIMA DIMENSÃO", Vector3(0, 3.6, 0), 28)
 	return portal
 
-func _process(dt: float) -> void:
-	clock += dt
+func _physics_process(dt: float) -> void:
 	for entry in cars:
 		var c: Node3D = entry.node
+		var old_position = c.position
 		c.position.x += entry.speed * entry.dir * dt
+		if traffic_enabled and is_instance_valid(pedestrian):
+			var bounds = AABB(Vector3(-2.16, -1.82, -1.04), Vector3(4.32, 3.42, 2.08))
+			var contact = bounds.intersects_segment(previous_pedestrian - old_position, pedestrian.position - c.position)
+			if contact != null:
+				traffic_enabled = false
+				car_hit.emit()
 		if abs(c.position.x) > 55:
 			c.position.x = -55 * entry.dir
+	if is_instance_valid(pedestrian):
+		previous_pedestrian = pedestrian.position
 	for a in actors:
-		if a.get_meta("walk", false):
-			var origin: Vector3 = a.get_meta("origin")
-			var wave = sin(clock * .19 + float(a.get_meta("npc_id", 0)))
-			a.position.x = origin.x + wave * 3.5
-			a.rotation.y = -PI / 2 if cos(clock * .19 + float(a.get_meta("npc_id", 0))) > 0 else PI / 2
-			a.walk_speed = .75
+		if not a.get_meta("walk", false):
+			continue
+		if pedestrians_paused or a.pose == "talk":
+			a.walk_speed = 0
+			continue
+		var wait: float = maxf(0, a.get_meta("wait", 0.0) - dt)
+		a.set_meta("wait", wait)
+		if wait > 0:
+			a.walk_speed = 0
+			continue
+		var origin: Vector3 = a.get_meta("origin")
+		var span: float = a.get_meta("span")
+		var direction: float = a.get_meta("direction")
+		var speed = .7 + float(a.get_meta("npc_id")) * .035
+		a.position.x = clampf(a.position.x + direction * speed * dt, origin.x - span, origin.x + span)
+		a.position.z = origin.z
+		a.position.y = .17
+		a.rotation.y = lerp_angle(a.rotation.y, -PI / 2 if direction > 0 else PI / 2, dt * 7)
+		a.walk_speed = speed
+		if absf(a.position.x - origin.x) >= span - .01:
+			a.set_meta("direction", -direction)
+			a.set_meta("wait", .8 + float(a.get_meta("npc_id")) * .1)
+
+func _process(dt: float) -> void:
+	clock += dt
 	if moving_taxi and is_instance_valid(taxi):
 		taxi_progress = minf(taxi_progress + dt * 1.0, 28.0)
 		taxi.position.x = -8 + taxi_progress

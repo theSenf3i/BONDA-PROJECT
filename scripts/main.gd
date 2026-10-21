@@ -1,5 +1,6 @@
 extends Node3D
 
+var visits: Node
 var world: Node3D
 var player: CharacterBody3D
 var ui: CanvasLayer
@@ -46,6 +47,9 @@ var dead = false
 func _ready() -> void:
 	test_mode = "--qa" in OS.get_cmdline_user_args()
 	inputs()
+	visits = load("res://scripts/visits.gd").new()
+	visits.g = self
+	add_child(visits)
 	var helper = load("res://scripts/world.gd").new()
 	helper.environment(self)
 	helper.free()
@@ -73,6 +77,9 @@ func _ready() -> void:
 		call_deferred("run_qa")
 	if "--capture" in OS.get_cmdline_user_args():
 		call_deferred("capture_showcase")
+	if "--capture-v2" in OS.get_cmdline_user_args():
+		test_mode = true
+		call_deferred("capture_revision")
 
 func inputs() -> void:
 	var map = {
@@ -111,6 +118,9 @@ func rebuild(kind: String, spawn: Vector3, view_angle: float = 0.0) -> void:
 	player = load("res://scripts/player.gd").new()
 	world.add_child(player)
 	player.position = spawn
+	world.pedestrian = player
+	world.previous_pedestrian = spawn
+	world.car_hit.connect(traffic_death)
 	player.orbit = view_angle
 	player.step.connect(func(): sound.effect("step"))
 	player.enabled = false
@@ -156,7 +166,7 @@ func save_checkpoint(value: String) -> void:
 	DirAccess.make_dir_recursive_absolute("res://save")
 	var file = FileAccess.open("res://save/checkpoint.json", FileAccess.WRITE)
 	if file:
-		file.store_string(JSON.stringify({"stage": value, "memories": memories_found, "version": 1}))
+		file.store_string(JSON.stringify({"stage": value, "memories": memories_found, "version": 2, "papers": visits.collected, "coffee": visits.coffee_level}))
 
 func to_menu() -> void:
 	pause_game(false)
@@ -176,6 +186,7 @@ func to_menu() -> void:
 
 func new_game() -> void:
 	memories_found = 0
+	visits.collected.clear()
 	ui.show_menu(false)
 	ui.result_panel.hide()
 	start_home()
@@ -186,6 +197,8 @@ func continue_saved() -> void:
 		var data = JSON.parse_string(file.get_as_text())
 		if data is Dictionary:
 			checkpoint = data.get("stage", "home")
+			visits.collected = data.get("papers", [])
+			visits.coffee_level = float(data.get("coffee", 100.0))
 			memories_found = int(data.get("memories", 0))
 	ui.show_menu(false)
 	retry_checkpoint()
@@ -213,6 +226,7 @@ func start_neighborhood() -> void:
 	for pos in [Vector3(-17, .6, -6), Vector3(8, .6, 6), Vector3(31, .6, -6)]:
 		var item = world.box(world, pos, Vector3(.45, .3, .12), Color("bda1d1"))
 		memories.append(item)
+	visits.setup_papers()
 	set_play()
 	ui.notify("E para conversar • Q para uma esquiva rápida")
 
@@ -340,23 +354,10 @@ func week_later() -> void:
 	await ui.transition("UMA SEMANA DEPOIS…", 1.0)
 	if serial != transition_serial:
 		return
-	rebuild("clinic", Vector3(0, .1, 1.8), 0)
-	stage = "clinic"
-	set_objective("02 / 04   •   OUTRA CONSULTA", "Uma semana depois…")
-	player.actor.rotation = Vector3.ZERO
-	player.camera.current = true
-	sound.play("dedadao", 57, 103)
-	say([["Douglas", "Você de novo? Gostou tanto assim?"], ["Viajante", "Hahaha… Vim conferir se a cadeira da recepção continua confortável."], ["Douglas", "Sei. A cadeira."]], more_visits)
+	visits.start_coffee()
 
 func more_visits() -> void:
-	state = "cutscene"
-	ui.close_dialog()
-	var serial = transition_serial
-	for card in ["QUARTA-FEIRA.\n‘SÓ UMA DÚVIDA RÁPIDA.’", "SEXTA-FEIRA.\n‘ESQUECI OUTRA DÚVIDA.’", "NA SEMANA SEGUINTE…\nA RECEPCIONISTA JÁ SABIA O NOME."]:
-		await ui.transition(card, .8)
-		if serial != transition_serial:
-			return
-	start_invite(false)
+	visits.start_stroll()
 
 func start_invite(rebuild_room: bool = true) -> void:
 	stage = "invite"
@@ -369,7 +370,7 @@ func start_invite(rebuild_room: bool = true) -> void:
 	invite_question = 0
 	set_objective("02 / 04   •   FORA DO HORÁRIO", "Convide Douglas para sair. Seja sincero.")
 	sound.play("douglas_e_eu", 0, 39)
-	say([["Douglas", "A consulta acabou, Charles. Mas você parece que ainda quer perguntar alguma coisa."], ["Viajante", "Dessa vez não tem nada a ver com a consulta."]], invite_ask)
+	say([["Douglas", "Hoje você veio sem ficha, Charles. Mas parece que ainda quer perguntar alguma coisa."], ["Viajante", "Dessa vez não tem nada a ver com a consulta."]], invite_ask)
 
 func invite_ask() -> void:
 	var questions = [
@@ -596,7 +597,7 @@ func dodge_tick(dt: float) -> void:
 	ui.danger.text = ["RESPIRA. TEM ESPAÇO.", "ELA PEGOU OUTRA SACOLA.", "MUDE DE DIREÇÃO.", "ÚLTIMOS SEGUNDOS!"][intensity]
 	fire_clock -= dt
 	if fire_clock <= 0:
-		fire_clock = [1.25, 1.08, .92, .78][intensity]
+		fire_clock = [1.10, .94, .80, .68][intensity]
 		spawn_wave(intensity)
 	for i in range(bullets.size() - 1, -1, -1):
 		var b = bullets[i]
@@ -614,14 +615,15 @@ func dodge_tick(dt: float) -> void:
 func spawn_wave(intensity: int) -> void:
 	wave_number += 1
 	var origin = Vector3(0, 1.1, -9)
-	var destination = player.position + Vector3(0, .8, 0)
+	var lead = Vector3(player.velocity.x, 0, player.velocity.z) * (.18 if intensity >= 2 else 0.0)
+	var destination = player.position + Vector3(0, .8, 0) + lead
 	var forward = (destination - origin).normalized()
-	var count = 3 if intensity >= 2 and wave_number % 3 == 0 else 1
+	var count = 3 if intensity >= 1 and wave_number % 3 == 0 else 1
 	for i in range(count):
 		var spread = (float(i) - float(count - 1) / 2.0) * .21
 		var direction = forward.rotated(Vector3.UP, spread)
 		var projectile = world.box(world, origin, Vector3(.32, .16, .55), Color("e7b28f") if wave_number % 2 else Color("d295b8"))
-		bullets.append({"node": projectile, "velocity": direction * (6.2 + intensity * .75), "life": 6.0})
+		bullets.append({"node": projectile, "velocity": direction * (7.0 + intensity * .8), "life": 6.0})
 	world.actors[0].punch = 1
 	sound.effect("select")
 
@@ -691,6 +693,8 @@ func fail(reason: String) -> void:
 	if state == "gameover":
 		return
 	last_failure = reason
+	ui.toast_time = 0
+	ui.prompt.text = ""
 	state = "gameover"
 	dead = true
 	player.enabled = false
@@ -701,6 +705,17 @@ func fail(reason: String) -> void:
 	ui.failure(reason)
 	sound.effect("danger")
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+func traffic_death() -> void:
+	if state != "play" or stage not in ["neighborhood", "clinic_street", "coffee", "stroll"]:
+		return
+	player.actor.rotation.z = PI / 2
+	player.velocity = Vector3.ZERO
+	world.traffic_enabled = false
+	if stage == "neighborhood":
+		save_checkpoint("neighborhood")
+	burst(player.position + Vector3(0, 1, 0), Color("eed6a8"))
+	fail("ATROPELADO. A rua não perdoou a distração.\nOlhe para os dois lados e espere uma brecha. O carro também acerta durante a esquiva.")
 
 func retry_checkpoint() -> void:
 	if stage == "complete":
@@ -715,6 +730,8 @@ func retry_checkpoint() -> void:
 		"taxi": rebuild("neighborhood", Vector3(-8, .2, 4.8)); start_taxi()
 		"clinic_street": arrive_clinic_street()
 		"clinic": start_clinic()
+		"coffee": visits.start_coffee()
+		"stroll": visits.start_stroll()
 		"invite": start_invite()
 		"fight": start_fight()
 		"dodge": start_dodge()
@@ -722,6 +739,8 @@ func retry_checkpoint() -> void:
 		_: start_home()
 
 func say(lines: Array, done: Callable) -> void:
+	ui.toast_time = 0
+	ui.prompt.text = ""
 	dialogue = lines
 	dialogue_index = 0
 	dialogue_done = done
@@ -752,6 +771,8 @@ func next_line() -> void:
 		show_line()
 
 func ask(who: String, text: String, choices: Array, callback: Callable) -> void:
+	ui.toast_time = 0
+	ui.prompt.text = ""
 	state = "dialogue"
 	player.enabled = false
 	sound.duck = true
@@ -771,6 +792,8 @@ func select_choice(index: int) -> void:
 func interact() -> void:
 	if state != "play":
 		return
+	if visits.interact():
+		return
 	match stage:
 		"home":
 			if player.position.distance_to(Vector3(0, 0, 4.5)) < 2.2:
@@ -779,7 +802,10 @@ func interact() -> void:
 				return
 		"neighborhood":
 			if player.position.distance_to(world.taxi.position) < 3.5:
-				start_taxi()
+				if visits.collected.size() < 3:
+					ui.notify("Sua ficha voou! Recolha as três folhas amarelas antes de embarcar.")
+				else:
+					start_taxi()
 				return
 		"clinic_street":
 			if player.position.distance_to(Vector3(22, 0, -8)) < 3:
@@ -794,27 +820,26 @@ func interact() -> void:
 			if player.position.distance_to(Vector3(0, 0, -4)) < 2.5:
 				complete()
 				return
-	if stage in ["neighborhood", "clinic_street"]:
+	if stage in ["neighborhood", "clinic_street", "coffee"]:
 		for a in world.actors:
 			if player.position.distance_to(a.position) < 2.5:
 				npc_talk(a)
 				return
 
 func npc_talk(a: Node3D) -> void:
-	var bank = [
-		"Aquele táxi faz cada pergunta… Se ele pedir o nome da sua mãe, desce.",
-		"O bar tá aberto. A minha conta lá também. Faz uns oito meses.",
-		"Aqui tem clínica, mercado e portal. Só não tem ônibus no horário.",
-		"Já vi esse doutor antes. Metade do bairro conhece o Douglas. A outra metade tá na fila."
-	]
-	var id = a.get_instance_id()
-	var selection = randi_range(0, 3)
-	if selection == npc_last.get(id, -1):
-		selection = (selection + randi_range(1, 3)) % 4
+	var entry = load("res://scripts/neighbors.gd").ROSTER[int(a.get_meta("npc_id", 0))]
+	var id: String = entry.id
+	var selection = (int(npc_last.get(id, -1)) + 1) % entry.lines.size()
 	npc_last[id] = selection
 	a.pose = "talk"
+	a.walk_speed = 0
 	player.face(a.position)
-	say([["Morador", bank[selection]]], func(): a.pose = "idle"; set_play())
+	var d = player.position - a.position
+	a.rotation.y = atan2(-d.x, -d.z)
+	say([[entry.name, entry.lines[selection]]], func():
+		if is_instance_valid(a):
+			a.pose = "idle"
+		set_play())
 
 func exploration_tick() -> void:
 	var text = ""
@@ -830,10 +855,10 @@ func exploration_tick() -> void:
 			if player.position.distance_to(Vector3(.2, 0, -1.7)) < 3: text = "[ E ]  Conversar com Douglas"
 		"portal":
 			if player.position.distance_to(Vector3(0, 0, -4)) < 2.5: text = "[ E ]  Atravessar o portal"
-	if text == "" and stage in ["neighborhood", "clinic_street"]:
+	if text == "" and stage in ["neighborhood", "clinic_street", "coffee"]:
 		for a in world.actors:
 			if player.position.distance_to(a.position) < 2.5:
-				text = "[ E ]  Conversar"
+				text = "[ E ]  " + a.get_meta("display_name", "Conversar")
 		for i in range(memories.size() - 1, -1, -1):
 			var item = memories[i]
 			item.rotation.y += .02
@@ -843,7 +868,8 @@ func exploration_tick() -> void:
 				memories_found += 1
 				ui.notify("FITA ENCONTRADA • %d / 3  |  Um eco de outra dimensão" % memories_found)
 				sound.effect("portal")
-	ui.prompt.text = text
+	var mission_prompt: String = visits.prompt()
+	ui.prompt.text = mission_prompt if mission_prompt != "" else text
 
 func burst(pos: Vector3, tint: Color) -> void:
 	for i in range(9):
@@ -867,7 +893,12 @@ func _process(dt: float) -> void:
 		var p: Vector3 = world.taxi.position
 		cinema.position = p + Vector3(5.4, 3.6, 6.6)
 		cinema.look_at(p + Vector3(.4, .7, 0))
+	world.traffic_enabled = state == "play" and stage in ["neighborhood", "clinic_street", "coffee", "stroll"]
+	world.pedestrians_paused = state in ["dialogue", "gameover"]
 	if state == "play":
+		visits.tick(dt)
+		if state != "play":
+			return
 		if stage == "fight":
 			fight_tick(dt)
 		elif stage == "dodge":
@@ -914,5 +945,10 @@ func run_qa() -> void:
 func capture_showcase() -> void:
 	test_mode = true
 	var suite = load("res://tests/showcase.gd").new()
+	add_child(suite)
+	await suite.run(self)
+
+func capture_revision() -> void:
+	var suite = load("res://tests/revision_capture.gd").new()
 	add_child(suite)
 	await suite.run(self)

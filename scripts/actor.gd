@@ -1,5 +1,6 @@
 extends Node3D
 
+var gesture = 1.0
 var model: Node3D
 var arm_l: Node3D
 var arm_r: Node3D
@@ -52,8 +53,11 @@ func _process(dt: float) -> void:
 		arm_l.rotation.z = -.3
 		arm_r.rotation.z = .3
 	if pose == "talk":
-		arm_l.rotation.x = -.4 + sin(phase * 1.7) * .16
+		arm_l.rotation.x = -.4 + sin(phase * 1.7) * .16 * gesture
 		head.rotation.y = sin(phase * .7) * .09
+	if pose == "carry":
+		arm_l.rotation.x = -1.05
+		arm_r.rotation.x = -.75
 	if pose == "hug":
 		arm_l.rotation.x = -1.2
 		arm_r.rotation.x = -1.2

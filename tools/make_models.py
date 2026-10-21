@@ -44,10 +44,10 @@ def bar(name,a,b,r,material,parent=None,verts=8):
     return o
 def character(kind):
     bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
-    skin=mat('Pele',(.58,.37,.25) if kind=='vito' else (.7,.49,.34))
+    skin=mat('Pele',(.58,.37,.25) if kind in ('vito','gemaplys') else (.7,.49,.34))
     dark=mat('Cabelo',(.035,.026,.035) if kind!='ex' else (.21,.065,.035))
     black=mat('Armação',(.025,.025,.035));white=mat('Olhos',(.84,.83,.72))
-    shirt=mat('Roupa',{'vito':(.035,.045,.07),'douglas':(.84,.89,.85),'rival':(.33,.14,.48),'ex':(.68,.12,.19),'npc':(.08,.39,.35),'driver':(.64,.43,.16)}[kind])
+    shirt=mat('Roupa',{'vito':(.035,.045,.07),'douglas':(.84,.89,.85),'rival':(.33,.14,.48),'ex':(.68,.12,.19),'npc':(.08,.39,.35),'driver':(.64,.43,.16),'jean':(.61,.27,.09),'gemaplys':(.035,.04,.055),'biffe':(.1,.23,.29)}[kind])
     pants=mat('Calça',(.07,.095,.15) if kind!='ex' else (.13,.15,.24))
     shoes=mat('Tênis',(.1,.10,.13));sole=mat('Sola',(.68,.65,.59))
     rootnode=empty('Body',(0,0,0))
@@ -63,7 +63,7 @@ def character(kind):
         ball('Pupil',(s*.066,-.135,.078),(.014,.008,.015),black,head,8,5)
         bar('Brow',(s*.035,-.14,.113),(s*.103,-.127,.116),.009,dark,head)
     bar('Mouth',(-.039,-.117,-.059),(.039,-.117,-.059),.006,dark,head)
-    if kind in ('vito','driver'):
+    if kind in ('vito','driver','gemaplys','jean','biffe'):
         beard=mat('Barba',(.12,.075,.06))
         rings('Beard',[(-.125,.097,.102,0,-.015),(-.085,.139,.118,0,-.018),(-.035,.145,.116,0,-.01)],beard,12,head)
         bar('Moustache',(-.047,-.137,-.03),(.047,-.137,-.03),.011,beard,head)
@@ -86,7 +86,7 @@ def character(kind):
         rings('Leg',[(0,.105,.125,0,0),(-.32,.087,.09,0,0),(-.7,.068,.075,0,.005)],pants,8,leg)
         ball('Shoe',(0,-.055,-.77),(.088,.16,.085),shoes,leg,10,5)
         ball('Sole',(0,-.055,-.822),(.09,.16,.025),sole,leg,10,4)
-    if kind=='vito':
+    if kind in ('vito','gemaplys'):
         patch=mat('Estampa',(.19,.15,.24))
         mesh('ShirtPrint',[(-.14,-.164,1.16),(.14,-.164,1.16),(.14,-.17,1.29),(-.14,-.17,1.29)],[(0,1,2,3)],patch,rootnode)
     if kind=='douglas':
@@ -94,6 +94,45 @@ def character(kind):
         bar('Gravata',(0,-.168,1.38),(0,-.168,1.09),.028,teal,rootnode,4)
         for s in [-1,1]:bar('Estetoscopio',(s*.1,-.175,1.4),(s*.1,-.18,1.16),.009,black,rootnode)
         ball('EstetoscopioDisco',(.1,-.19,1.12),(.034,.012,.034),sole,rootnode)
+    if kind=='jean':
+        for o in list(bpy.data.objects):
+            if o.name.startswith(('Hair','Fringe')):bpy.data.objects.remove(o,do_unlink=True)
+        for side in [-1,1]:
+            ball('LongSideHair',(side*.16,.045,.03),(.075,.13,.24),dark,head,10,6)
+        ball('BackHair',(0,.105,.04),(.18,.09,.29),dark,head,10,6)
+        rings('FullBeard',[(-.23,.07,.08,0,-.015),(-.13,.14,.13,0,-.01),(-.04,.15,.12,0,0)],dark,10,head)
+        cap=mat('Gorro',(.16,.12,.09))
+        rings('Beanie',[(.17,.172,.145,0,.012),(.32,.16,.14,0,.012),(.44,.06,.06,.02,.015)],cap,12,head)
+        rings('BeanieFold',[(.14,.177,.148,0,.012),(.21,.177,.148,0,.012)],cap,12,head)
+        inner=mat('CamisetaInterna',(.035,.035,.045))
+        mesh('JacketOpening',[(-.09,-.18,1.0),(.09,-.18,1.0),(.09,-.18,1.44),(-.09,-.18,1.44)],[(0,1,2,3)],inner,rootnode)
+        for side in [-1,1]:
+            bar('JacketZip',(side*.11,-.18,1.0),(side*.11,-.18,1.43),.008,sole,rootnode)
+        rootnode.scale=(1.04,1.05,1.04)
+    if kind=='biffe':
+        for o in list(bpy.data.objects):
+            if o.name.startswith(('Hair','Fringe','Beard')):bpy.data.objects.remove(o,do_unlink=True)
+        curl=mat('Cachos',(.055,.033,.021))
+        for layer in range(3):
+            for i in range(12):
+                angle=i*math.tau/12+layer*.2
+                ball('Curl',(math.cos(angle)*(.17-layer*.026),math.sin(angle)*(.14-layer*.018),.17+layer*.075),(.065,.066,.074),curl,head,7,5)
+        ball('Crown',(0,.02,.34),(.12,.11,.085),curl,head,8,5)
+        rings('ChinBeard',[(-.15,.055,.06,0,-.06),(-.08,.075,.06,0,-.06)],dark,8,head)
+        headphones=mat('Fone',(.16,.17,.2))
+        for side in [-1,1]:
+            ball('HeadphoneCup',(side*.12,-.12,1.43),(.07,.045,.09),headphones,rootnode,8,5)
+        for i in range(8):
+            a=i*math.pi/8;b=(i+1)*math.pi/8
+            bar('HeadphoneBand',(.14*math.cos(a),.1*math.sin(a),1.46),(.14*math.cos(b),.1*math.sin(b),1.46),.018,headphones,rootnode)
+        rootnode.scale=(.94,.95,1.03)
+    if kind=='gemaplys':
+        rootnode.scale=(1.13,1.12,1.0)
+        printmat=mat('Cinema',(.72,.66,.57))
+        for j in range(3):
+            mesh('FilmStrip'+str(j),[(-.1,-.184,1.14+j*.045),(.1,-.184,1.14+j*.045),(.1,-.184,1.16+j*.045),(-.1,-.184,1.16+j*.045)],[(0,1,2,3)],printmat,rootnode)
+        for side in [-1,1]:
+            bar('HairSide',(side*.14,.02,.16),(side*.14,.04,-.01),.028,dark,head)
     bpy.ops.export_scene.gltf(filepath=os.path.join(root,kind+'.glb'),export_format='GLB',export_yup=True)
-for k in ['vito','douglas','rival','ex','npc','driver']:character(k)
+for k in ['vito','douglas','rival','ex','npc','driver','jean','gemaplys','biffe']:character(k)
 print('MODELS_OK')
