@@ -133,6 +133,34 @@ func run(g: Node) -> void:
 	check("VHS and void HUD removed after portal", not g.void_filter.visible and not g.void_hud.visible)
 	check("Original world lighting restored", g.void_environment.environment.background_mode == Environment.BG_SKY)
 	await shot("void_05_destination")
+	check("Portal destination retains messy home and 17 tasks", g.world.home.tasks.size() == 17 and g.home_cleaned.is_empty())
+	check("Arrival conversation blocks movement", not g.player.enabled)
+	check("Arrival ties Michael and Robson to appointment board", "Michael" in str(g.dialogue) and "Robson" in str(g.dialogue) and "Consulta hoje as 16:00" in str(g.dialogue))
+	g.test_mode = false
+	while g.state == "dialogue":
+		g.next_line()
+	check("Finishing arrival releases player", g.state == "play" and g.player.enabled and g.home_arrival_seen)
+	var arrival_save = JSON.parse_string(FileAccess.get_file_as_string("res://save/checkpoint.json"))
+	check("Arrival completion persisted at home checkpoint", arrival_save.get("home_arrival_seen", false) and arrival_save.get("stage", "") == "home")
+	g.home_arrival_seen = false
+	g.continue_saved()
+	check("Continue home avoids replaying arrival", g.stage == "home" and g.state == "play" and g.home_arrival_seen)
+	g.player.position = g.world.home.tasks[0].node.position
+	g.interact()
+	check("Optional cleaning remark keeps exploration playable", g.state == "play" and "Robson" in g.ui.toast.text)
+	g.player.position = Vector3(0, .1, 4.5)
+	g.interact()
+	check("House exit still leads to neighborhood", g.stage == "neighborhood")
+	var invalid_save = FileAccess.open("res://save/checkpoint.json", FileAccess.WRITE)
+	invalid_save.store_string("invalid")
+	invalid_save.close()
+	g.continue_saved()
+	check("Invalid save begins in void", g.stage == "void" and g.state == "cutscene")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("res://save/checkpoint.json"))
+	g.continue_saved()
+	check("Missing save begins in void", g.stage == "void" and g.state == "cutscene")
+	g.test_mode = true
+	g.void_sequence.finish()
 	g.checkpoint = "void"
 	g.retry_checkpoint()
 	await get_tree().create_timer(0.1).timeout
@@ -150,6 +178,7 @@ func run(g: Node) -> void:
 	await get_tree().process_frame
 	check("Continue restores playable void", g.stage == "void" and g.state == "play" and g.void_intro_seen)
 	g.new_game()
+	check("New game resets arrival dialogue", not g.home_arrival_seen)
 	check("New game replays Michael briefing", g.stage == "void" and g.state == "cutscene" and not g.void_intro_seen)
 	g.to_menu()
 	await get_tree().create_timer(0.2).timeout

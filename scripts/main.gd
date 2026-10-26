@@ -2,6 +2,7 @@ extends Node3D
 
 var home_cleaned: Array = []
 var home_achievement = false
+var home_arrival_seen = false
 
 var visits: Node
 var world: Node3D
@@ -11,7 +12,7 @@ var sound: Node
 var cinema: Camera3D
 var state = "menu"
 var stage = "menu"
-var checkpoint = "home"
+var checkpoint = "void"
 var paused = false
 var dialogue: Array = []
 var dialogue_index = 0
@@ -107,7 +108,7 @@ func _ready() -> void:
 		call_deferred("run_home_checks")
 	if "--home" in OS.get_cmdline_user_args():
 		ui.show_menu(false)
-		start_home()
+		new_game()
 	if "--void" in OS.get_cmdline_user_args():
 		start_void()
 	if "--qa-void" in OS.get_cmdline_user_args() or "--capture-void" in OS.get_cmdline_user_args():
@@ -210,7 +211,7 @@ func save_checkpoint(value: String) -> void:
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://save"))
 	var file = FileAccess.open("res://save/checkpoint.json", FileAccess.WRITE)
 	if file:
-		file.store_string(JSON.stringify({"stage": value, "memories": memories_found, "version": 4, "home_cleaned": home_cleaned, "void_intro_seen": void_intro_seen, "papers": visits.collected, "coffee": visits.coffee_level}))
+		file.store_string(JSON.stringify({"stage": value, "memories": memories_found, "version": 5, "home_arrival_seen": home_arrival_seen, "home_cleaned": home_cleaned, "void_intro_seen": void_intro_seen, "papers": visits.collected, "coffee": visits.coffee_level}))
 
 func to_menu() -> void:
 	pause_game(false)
@@ -230,6 +231,7 @@ func to_menu() -> void:
 
 func new_game() -> void:
 	home_cleaned.clear()
+	home_arrival_seen = false
 	memories_found = 0
 	void_intro_seen = false
 	visits.collected.clear()
@@ -239,11 +241,18 @@ func new_game() -> void:
 
 func continue_saved() -> void:
 	var file = FileAccess.open("res://save/checkpoint.json", FileAccess.READ)
+	if not file:
+		new_game()
+		return
 	if file:
 		var data = JSON.parse_string(file.get_as_text())
+		if not data is Dictionary:
+			new_game()
+			return
 		if data is Dictionary:
 			home_cleaned = data.get("home_cleaned", [])
-			checkpoint = data.get("stage", "home")
+			checkpoint = data.get("stage", "void")
+			home_arrival_seen = bool(data.get("home_arrival_seen", false))
 			void_intro_seen = bool(data.get("void_intro_seen", false))
 			visits.collected = data.get("papers", [])
 			visits.coffee_level = float(data.get("coffee", 100.0))
@@ -258,11 +267,22 @@ func start_home() -> void:
 	set_objective("01 / 04   •   UMA CONSULTA NORMAL", "Saia de casa e encontre o ponto de táxi.")
 	sound.play("dedadao", 0, 17)
 	target(Vector3(0, 2.6, 4.8), "SAIR DE CASA  ↓")
+	if home_arrival_seen:
+		set_play()
+		return
 	say([
-		["Viajante", "Tá. Eu atravessei um portal e acordei com uma consulta marcada. Que organização do caralho."],
-		["Viajante", "O papel diz ‘Charles’. Nesta dimensão, parece que esse sou eu. Mas eu ainda preciso encontrar o caminho de volta pro Robson."],
-		["Viajante", "Uma consulta normal. Pegar um táxi, falar com o doutor e ir embora. Não tem como isso dar errado."]
-	], set_play)
+		["Júnior", "Cadê a escada? Cadê o Michael? Eu passei pela porta e vim parar... aqui?"],
+		["Júnior", "Os deuses do espaço estão putos com a bagunça das dimensões. Se virem essa pia, vão achar que fui eu também."],
+		["Júnior", "Calma. O Michael mandou entrar nos portais e consertar o que ficou pra trás. Isso aqui deve ser o primeiro mundo."],
+		["Júnior", "Robson, eu ainda tô indo atrás de você. Só não esperava passar por um colchão nesse estado."],
+		["Júnior", "O quadro diz: Consulta hoje as 16:00. Atravessei o espaço e o tempo pra cair no dia de ir ao médico. Puta que pariu."],
+		["Júnior", "Tá. Primeiro essa consulta. Deve ter um táxi lá fora. Um mundo de cada vez, até achar o caminho de volta."]
+	], finish_home_arrival)
+
+func finish_home_arrival() -> void:
+	home_arrival_seen = true
+	save_checkpoint("home")
+	set_play()
 
 func start_neighborhood() -> void:
 	stage = "neighborhood"
@@ -785,7 +805,7 @@ func retry_checkpoint() -> void:
 		"fight": start_fight()
 		"dodge": start_dodge()
 		"portal": rebuild("parking", Vector3(0, .1, 3)); open_portal()
-		_: start_home()
+		_: new_game()
 
 func say(lines: Array, done: Callable) -> void:
 	ui.toast_time = 0
@@ -1244,7 +1264,16 @@ func clean_home_nearby() -> bool:
 			save_home_profile()
 			ui.notify("CONQUISTA DESBLOQUEADA\nCaja susa, chão sujo...")
 		else:
-			ui.notify("Pronto.")
+			var remarks = {
+				"mattress": "Júnior: Robson, quando eu te achar, a gente arruma uma cama melhor que essa.",
+				"table": "Júnior: A TV também tá no chiado. Já não bastava aquele vazio com cara de fita velha?",
+				"chair": "Júnior: Pronto. Um lugar pra sentar e questionar minhas escolhas entre dois portais.",
+				"toilet": "Júnior: Se isso aqui era uma dimensão condenada, achei o motivo.",
+				"sink": "Júnior: Michael falou pra consertar a bagunça. Não especificou se incluía lavar louça."
+			}
+			ui.notify(remarks.get(nearby.id, "Pronto."))
+			if nearby.id in remarks:
+				ui.toast_time = 7.0
 	return true
 
 func run_home_checks() -> void:

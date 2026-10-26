@@ -17,6 +17,8 @@ func run(game: Node) -> void:
 	g = game
 	g.ui.show_menu(false)
 	g.start_home()
+	g.ui.subtitle.visible_characters = -1
+	await snapshot("home_arrival")
 	g.ui.close_dialog()
 	g.set_play()
 	await get_tree().process_frame

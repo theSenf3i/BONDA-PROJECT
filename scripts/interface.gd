@@ -108,6 +108,8 @@ func _ready() -> void:
 	danger.add_theme_color_override("font_outline_color", ink)
 	toast = label(hud, "", Vector2(300, 275), Vector2(680, 45), 25)
 	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	toast.size.y = 120
 	toast.add_theme_constant_override("outline_size", 5)
 	toast.add_theme_color_override("font_outline_color", ink)
 	subtitle_panel = panel(root, Vector2(76, 461), Vector2(1128, 202), Color(.10, .085, .14, .97))
@@ -138,7 +140,7 @@ func _ready() -> void:
 	continue_button.name = "Continue"
 	label(menu, "FAN GAME  •  LEGENDADO  •  TRILHA BONDA", Vector2(32, 590), Vector2(476, 22), 13, Color("b5a6bf"))
 	button(menu, "CONQUISTAS", Vector2(32, 522), Vector2(230, 44), func(): show_extras(false))
-	button(menu, "NOVIDADES / v0.4", Vector2(278, 522), Vector2(230, 44), func(): show_extras(true))
+	button(menu, "NOVIDADES / v0.5", Vector2(278, 522), Vector2(230, 44), func(): show_extras(true))
 	pause_panel = panel(root, Vector2(390, 113), Vector2(500, 503), Color(.10, .09, .14, .98))
 	label(pause_panel, "UM RESPIRO.", Vector2(32, 25), Vector2(440, 55), 39)
 	button(pause_panel, "VOLTAR AO JOGO", Vector2(32, 99), Vector2(436, 45), func(): resume_game.emit())

@@ -3,6 +3,21 @@ Histórico até a versão 0.4
 Compilado em 26/10/2026
 
 ============================================================
+VERSAO 0.5 - DO PORTAL A CASA
+============================================================
+- Campanha: void, conversa com Michael, escadaria, portal e casa bagunçada.
+- PLAY_HOME agora abre o menu; o atalho antigo não pula mais a abertura.
+- O parâmetro --home também começa uma nova campanha pelo void.
+- Continuar sem checkpoint válido volta ao início no void.
+- Novas falas de chegada conectam Michael, Robson e a consulta das 16:00.
+- Removida a menção a um papel com o nome Charles que não existia na casa.
+- Comentários opcionais ao arrumar colchão, mesa, cadeira, vaso e pia.
+- Falas originais adaptadas para o jogo, sem novas dublagens.
+- Conversa de chegada concluída é salva e não repete ao continuar na casa.
+- Nova partida reinicia a chegada; conquistas permanentes são preservadas.
+- Menu e TXT compartilham este changelog com o histórico anterior.
+
+============================================================
 VERSÃO 0.4 - CASA E CONQUISTAS
 ============================================================
 - Casa reformulada em um único cômodo, com paredes descascadas e desgaste.
