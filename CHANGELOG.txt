@@ -1,0 +1,148 @@
+BONDAONDA - CHANGELOG DO PROJETO
+Histórico até a versão 0.4
+Compilado em 26/10/2026
+
+============================================================
+VERSÃO 0.4 - CASA E CONQUISTAS
+============================================================
+- Casa reformulada em um único cômodo, com paredes descascadas e desgaste.
+- Colchão manchado no canto, TV de tubo sobre mesa vermelha e cadeira de bar.
+- Lixo e latas de Skol e Monster espalhados pela casa.
+- Vaso manchado, lixeira com papel higiênico e pia cheia de louça.
+- Quadro com a mensagem: "Consulta hoje as 16:00".
+- Limpeza e organização opcionais, descobertas por proximidade com E.
+- Conquista secreta "Caja susa, chão sujo..." ao concluir todas as tarefas.
+- Menu de conquistas com estado bloqueado/desbloqueado.
+- Conquista preservada entre partidas; limpeza salva no checkpoint da campanha.
+- Botão de novidades no menu lê este mesmo arquivo, mantendo os históricos iguais.
+- Rua, clínica, táxi e combate preservados nesta versão.
+
+============================================================
+VERSÃO 0.3 - VOID VHS
+============================================================
+
+ABERTURA E HISTÓRIA
+- Adicionado o void como abertura antes da dimensão Dedadão.
+- Cutscene com câmera alta, inclinada e em movimento, com atmosfera estranha e inquietante.
+- Michael aparece e conversa com Júnior por meio de nove falas legendadas.
+- A conversa explica que os deuses do espaço estão furiosos e que é necessário entrar nos portais para reparar as dimensões.
+- Diálogo adaptado para o jogo a partir do contexto do álbum.
+- Falas avançam automaticamente; E permite antecipar após um intervalo mínimo de leitura.
+- Controle do jogador bloqueado durante a cutscene e liberado ao final, com transição de câmera.
+
+CENÁRIO E EXPLORAÇÃO
+- Escadaria suspensa com 80 degraus, quatro lances e patamares até o primeiro portal.
+- Percurso de aproximadamente 34 segundos caminhando, sem saltos obrigatórios.
+- Recuperação no último patamar em caso de queda.
+- Paisagem com cidades invertidas, montanhas, lagos, árvores mortas, destroços e correntes orgânicas.
+- Objetos flutuantes com movimento e rotação contínuos.
+- Água e correntes com efeitos animados.
+- Efeito VHS no void; tecla V reduz ou restaura o efeito.
+- Legendas mantidas legíveis sobre o efeito visual.
+
+MICHAEL E PORTAL
+- Modelo estilizado de Michael com terno, camisa, luva branca, chapéu e óculos.
+- Após a cutscene, Michael permanece como NPC interagível.
+- Interação próxima com E reproduz apenas a reação "Hee hee", com legenda, gesto e clipe de áudio da referência fornecida.
+- Intervalo entre interações para evitar repetição contínua.
+- Portal no topo da escada acessível com E.
+- Transição luminosa do portal para a casa da dimensão Dedadão.
+
+PROGRESSO E CORREÇÕES
+- Checkpoint registra a conclusão da conversa de Michael.
+- Continuar ou repetir o void não repete uma introdução já concluída; Nova partida reapresenta a cena.
+- Pausa congela a abertura e o cenário, ocultando as legendas durante o menu de pausa.
+- Retorno ao menu encerra a sequência da abertura.
+- Corrigida a posição da porta inicial que obstruía a câmera; adicionada colisão.
+- Adicionado PLAY_VOID.bat para iniciar diretamente na abertura.
+- Atualizados os documentos de instruções e notas da versão.
+- Mantido o conteúdo anterior da dimensão Dedadão.
+
+VALIDAÇÃO
+- 34 verificações funcionais da abertura aprovadas.
+- 63 verificações de regressão do conteúdo anterior aprovadas.
+- Total de 97 verificações aprovadas.
+- Conferência visual e verificação de extração, importação e checkpoint do pacote.
+- Permanecem avisos não fatais da engine nos registros; os testes não substituem uma avaliação humana completa da experiência.
+
+============================================================
+VERSÃO 0.2 - BAIRRO E VISITAS
+============================================================
+
+BAIRRO E PERSONAGENS
+- Modelos distintos e estilizados para Jean, Vito e Biffe, com aparência e gestos próprios.
+- Adicionados Saiko, Tiba, Scottonauta, Hawk, Raposito e Umild ao bairro.
+- Nove NPCs com quatro falas autorais cada, totalizando 36 falas.
+- Falas exibidas em ciclo, sem repetição antes de completar o conjunto.
+- NPCs caminham por trechos delimitados da calçada, param nas pontas e durante conversas.
+- Nomes exibidos acima dos personagens e nos diálogos.
+
+NOVAS ETAPAS COM DOUGLAS
+- "A ficha voou": coleta de três folhas amarelas antes do primeiro táxi, com animação de vento e comentários do protagonista.
+- Coleta das folhas preservada após atropelamentos.
+- "Café para dois": transporte de café da banca até a clínica na semana seguinte à primeira consulta.
+- Correr, pular e esquivar derrama o café; caminhar preserva o conteúdo.
+- Diálogo da entrega varia conforme a quantidade restante e oferece duas respostas pessoais.
+- Derramar todo o café reinicia a etapa na banca.
+- "Fora do horário": passeio com Douglas até um banco, com duas conversas e checkpoint próprio.
+- Douglas espera quando o jogador fica para trás.
+- Passeio desenvolve o vínculo com Douglas e a dúvida do protagonista sobre voltar para Robson.
+
+TRÂNSITO E DIFICULDADE
+- Veículos em movimento causam morte imediata, inclusive durante uma esquiva rápida.
+- Detecção de colisão acompanha o deslocamento dos carros entre quadros.
+- Conversas e cenas sem controle protegem o jogador de atropelamentos.
+- Reinício no desafio atual, em posição segura.
+- Desafio final mantém 30 segundos, três vidas e invulnerabilidade breve após dano.
+- Projéteis mais rápidos e intervalos menores entre disparos.
+- Rajadas em leque de três projéteis a partir de 7,5 segundos.
+- Mira antecipa levemente o movimento a partir de 15 segundos; tiros não perseguem após o disparo.
+
+CONTEÚDO E VERIFICAÇÃO
+- Falas e cenas novas são adaptações autorais para o jogo, não citações autenticadas do podcast.
+- Mantida a trilha exclusivamente de BONDA, sem novas dimensões ou dublagem.
+- Adicionadas verificações de diálogos, rotas dos NPCs, trânsito, café, passeio e reinícios.
+
+============================================================
+VERSÃO 0.1 - PRIMEIRA VERSÃO JOGÁVEL / DIMENSÃO DEDADÃO
+============================================================
+
+BASE DO JOGO
+- Primeira versão jogável criada em Godot 4.3, com modelos próprios feitos no Blender.
+- Dimensão Dedadão dividida em quatro partes.
+- Movimentação 3D, corrida, pulo, esquiva rápida e câmera controlável.
+- Interações e diálogos legendados com escolhas de resposta.
+- Menu, pausa, tela cheia e controles de áudio.
+- Checkpoints para continuar do último desafio e reiniciar etapas.
+- Pacote com a engine incluída, inicializador JOGAR.bat e acesso ao editor por EDITAR.bat.
+
+CASA, BAIRRO E TÁXI
+- Exploração da casa e do bairro, conversas com moradores e entrada no táxi amarelo.
+- Viagem de táxi com o carro em movimento durante as escolhas.
+- Expor informações pessoais demais leva ao sequestro e ao reinício da viagem.
+
+CLÍNICA E RELACIONAMENTO
+- Atendimento na clínica sem representação gráfica.
+- Retorno para casa, passagem de uma semana e montagem de visitas.
+- Convite com possibilidade de aceitação ou rejeição.
+
+ENCONTRO E LUTA
+- Combate em 3D com golpes, defesa, esquiva, avisos de ataque e barras de vida.
+- Derrota permite repetir somente a luta.
+
+ESTACIONAMENTO
+- Desafio de sobrevivência de 30 segundos, com três vidas.
+- Movimento em todas as direções, pulo e invulnerabilidade breve após impacto.
+- Dificuldade crescente a cada 7,5 segundos.
+- Conclusão abre o próximo portal.
+
+ÁUDIO
+- Integradas cinco faixas de BONDA: Dedadão, Condomínio Life, Douglas & Eu, Douglas & Ele e Não Erro Tiro de Nine.
+- Transições graduais entre músicas e redução do volume durante diálogos.
+- Volumes separados para música e efeitos.
+- Diálogos sem dublagem.
+
+ESCOPO
+- Esta versão começa depois da travessia do portal e ainda não inclui o prólogo no void.
+- Personagens e cenários usam uma interpretação visual low-poly.
+

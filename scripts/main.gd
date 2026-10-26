@@ -1,5 +1,8 @@
 extends Node3D
 
+var home_cleaned: Array = []
+var home_achievement = false
+
 var visits: Node
 var world: Node3D
 var player: CharacterBody3D
@@ -69,6 +72,8 @@ var void_intro_seen = false
 
 func _ready() -> void:
 	test_mode = "--qa" in OS.get_cmdline_user_args() or "--qa-void" in OS.get_cmdline_user_args() or "--capture-void" in OS.get_cmdline_user_args()
+	test_mode = test_mode or "--qa-home" in OS.get_cmdline_user_args()
+	load_home_profile()
 	inputs()
 	visits = load("res://scripts/visits.gd").new()
 	visits.g = self
@@ -81,6 +86,7 @@ func _ready() -> void:
 	ui = load("res://scripts/interface.gd").new()
 	add_child(ui)
 	ui.process_mode = Node.PROCESS_MODE_ALWAYS
+	ui.home_achievement = home_achievement
 	ui.start_game.connect(new_game)
 	ui.continue_game.connect(continue_saved)
 	ui.advance.connect(next_line)
@@ -97,6 +103,11 @@ func _ready() -> void:
 	cinema.fov = 54
 	setup_void_presentation()
 	to_menu()
+	if "--qa-home" in OS.get_cmdline_user_args():
+		call_deferred("run_home_checks")
+	if "--home" in OS.get_cmdline_user_args():
+		ui.show_menu(false)
+		start_home()
 	if "--void" in OS.get_cmdline_user_args():
 		start_void()
 	if "--qa-void" in OS.get_cmdline_user_args() or "--capture-void" in OS.get_cmdline_user_args():
@@ -143,6 +154,8 @@ func rebuild(kind: String, spawn: Vector3, view_angle: float = 0.0) -> void:
 	world = load("res://scripts/void_world.gd" if kind == "void" else "res://scripts/world.gd").new()
 	add_child(world)
 	world.build(kind)
+	if kind == "home":
+		world.home.restore(home_cleaned)
 	apply_void_presentation(kind == "void")
 	player = load("res://scripts/player.gd").new()
 	world.add_child(player)
@@ -197,7 +210,7 @@ func save_checkpoint(value: String) -> void:
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://save"))
 	var file = FileAccess.open("res://save/checkpoint.json", FileAccess.WRITE)
 	if file:
-		file.store_string(JSON.stringify({"stage": value, "memories": memories_found, "version": 3, "void_intro_seen": void_intro_seen, "papers": visits.collected, "coffee": visits.coffee_level}))
+		file.store_string(JSON.stringify({"stage": value, "memories": memories_found, "version": 4, "home_cleaned": home_cleaned, "void_intro_seen": void_intro_seen, "papers": visits.collected, "coffee": visits.coffee_level}))
 
 func to_menu() -> void:
 	pause_game(false)
@@ -216,6 +229,7 @@ func to_menu() -> void:
 	sound.play("dedadao", 0, 17)
 
 func new_game() -> void:
+	home_cleaned.clear()
 	memories_found = 0
 	void_intro_seen = false
 	visits.collected.clear()
@@ -228,6 +242,7 @@ func continue_saved() -> void:
 	if file:
 		var data = JSON.parse_string(file.get_as_text())
 		if data is Dictionary:
+			home_cleaned = data.get("home_cleaned", [])
 			checkpoint = data.get("stage", "home")
 			void_intro_seen = bool(data.get("void_intro_seen", false))
 			visits.collected = data.get("papers", [])
@@ -238,7 +253,7 @@ func continue_saved() -> void:
 
 func start_home() -> void:
 	stage = "home"
-	rebuild("home", Vector3(0, .1, .7), PI)
+	rebuild("home", Vector3(0, .1, .7), 0)
 	save_checkpoint("home")
 	set_objective("01 / 04   •   UMA CONSULTA NORMAL", "Saia de casa e encontre o ponto de táxi.")
 	sound.play("dedadao", 0, 17)
@@ -824,7 +839,7 @@ func select_choice(index: int) -> void:
 	cb.call(index)
 
 func interact() -> void:
-	if state != "play":
+	if state != "play" or paused:
 		return
 	if stage == "void":
 		if player.position.distance_to(world.michael.position) < 2.8:
@@ -838,11 +853,13 @@ func interact() -> void:
 			return
 		enter_void_portal()
 		return
+	if stage == "home" and clean_home_nearby():
+		return
 	if visits.interact():
 		return
 	match stage:
 		"home":
-			if player.position.distance_to(Vector3(0, 0, 4.5)) < 2.2:
+			if player.position.distance_to(Vector3(0, 0, 4.5)) < 1.3:
 				sound.effect("door")
 				start_neighborhood()
 				return
@@ -891,7 +908,7 @@ func exploration_tick() -> void:
 	var text = ""
 	match stage:
 		"home":
-			if player.position.distance_to(Vector3(0, 0, 4.5)) < 2.2: text = "[ E ]  Sair de casa"
+			if player.position.distance_to(Vector3(0, 0, 4.5)) < 1.3: text = "[ E ]  Sair de casa"
 		"neighborhood":
 			var dist = player.position.distance_to(world.taxi.position)
 			if dist < 3.5: text = "[ E ]  Entrar no táxi"
@@ -914,6 +931,10 @@ func exploration_tick() -> void:
 				memories_found += 1
 				ui.notify("FITA ENCONTRADA • %d / 3  |  Um eco de outra dimensão" % memories_found)
 				sound.effect("portal")
+	if stage == "home" and text == "":
+		var nearby: Dictionary = world.home.nearest(player.position)
+		if not nearby.is_empty():
+			text = "[ E ]  " + nearby.title
 	var mission_prompt: String = visits.prompt()
 	ui.prompt.text = mission_prompt if mission_prompt != "" else text
 
@@ -1190,3 +1211,43 @@ func run_void_checks() -> void:
 	var suite = load("res://tests/void_checks.gd").new()
 	add_child(suite)
 	await suite.run(self)
+
+func load_home_profile() -> void:
+	if test_mode:
+		return
+	if FileAccess.file_exists("res://save/achievements.json"):
+		var data = JSON.parse_string(FileAccess.get_file_as_string("res://save/achievements.json"))
+		if data is Dictionary:
+			home_achievement = bool(data.get("clean_home", false))
+
+func save_home_profile() -> void:
+	if test_mode:
+		return
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://save"))
+	var file = FileAccess.open("res://save/achievements.json", FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify({"clean_home": home_achievement}))
+
+func clean_home_nearby() -> bool:
+	if player.position.distance_to(Vector3(0, 0, 4.5)) < 1.3:
+		return false
+	var nearby: Dictionary = world.home.nearest(player.position)
+	if nearby.is_empty():
+		return false
+	if world.home.clean(nearby.id):
+		home_cleaned = world.home.completed.duplicate()
+		save_checkpoint("home")
+		sound.effect("select")
+		if home_cleaned.size() == world.home.tasks.size() and not home_achievement:
+			home_achievement = true
+			ui.home_achievement = true
+			save_home_profile()
+			ui.notify("CONQUISTA DESBLOQUEADA\nCaja susa, chão sujo...")
+		else:
+			ui.notify("Pronto.")
+	return true
+
+func run_home_checks() -> void:
+	var checks = load("res://tests/home_checks.gd").new()
+	add_child(checks)
+	await checks.run(self)

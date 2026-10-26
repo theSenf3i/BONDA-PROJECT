@@ -12,6 +12,7 @@ var cars: Array = []
 var taxi: Node3D
 var portal: Node3D
 var scene_kind = ""
+var home: Node3D
 var clock = 0.0
 var moving_taxi = false
 var taxi_origin = Vector3.ZERO
@@ -334,6 +335,11 @@ func neighborhood() -> void:
 		box(self, Vector3(0, 3, z), Vector3(116, 6, 1), Color("897e7d"), true, "brick")
 
 func interior(kind: String) -> void:
+	if kind == "home":
+		home = load("res://scripts/home.gd").new()
+		add_child(home)
+		home.build(self)
+		return
 	var clinic = kind == "clinic"
 	box(self, Vector3(0, -.2, 0), Vector3(12, .4, 11), Color("b6aaa0"), true, "tile" if clinic else "wood")
 	var wall = Color("aebeb4") if clinic else Color("bb9b81")

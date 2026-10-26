@@ -12,6 +12,12 @@ signal effects_changed(value: float)
 signal mute_requested
 signal fullscreen_requested
 
+var home_achievement = false
+var extras: Panel
+var extras_title: Label
+var extras_text: RichTextLabel
+var extras_close: Button
+
 var root: Control
 var hud: Control
 var chapter: Label
@@ -122,7 +128,7 @@ func _ready() -> void:
 	options.size = Vector2(482, 142)
 	options.add_theme_constant_override("separation", 8)
 	subtitle_panel.hide()
-	menu = panel(root, Vector2(56, 67), Vector2(540, 577), Color(.10, .09, .14, .95))
+	menu = panel(root, Vector2(56, 67), Vector2(540, 625), Color(.10, .09, .14, .95))
 	label(menu, "UMA AVENTURA NO UNIVERSO DE BONDA", Vector2(32, 28), Vector2(478, 23), 15, accent)
 	label(menu, "BONDA\nONDA", Vector2(27, 60), Vector2(490, 180), 83, paper)
 	label(menu, "01  /  DIMENSÃO DEDADÃO", Vector2(32, 258), Vector2(480, 36), 25, accent)
@@ -130,7 +136,9 @@ func _ready() -> void:
 	button(menu, "ENTRAR NA DIMENSÃO  →", Vector2(32, 402), Vector2(476, 52), func(): start_game.emit())
 	var continue_button = button(menu, "CONTINUAR DO CHECKPOINT", Vector2(32, 464), Vector2(476, 44), func(): continue_game.emit())
 	continue_button.name = "Continue"
-	label(menu, "FAN GAME  •  LEGENDADO  •  TRILHA BONDA", Vector2(32, 533), Vector2(476, 22), 13, Color("b5a6bf"))
+	label(menu, "FAN GAME  •  LEGENDADO  •  TRILHA BONDA", Vector2(32, 590), Vector2(476, 22), 13, Color("b5a6bf"))
+	button(menu, "CONQUISTAS", Vector2(32, 522), Vector2(230, 44), func(): show_extras(false))
+	button(menu, "NOVIDADES / v0.4", Vector2(278, 522), Vector2(230, 44), func(): show_extras(true))
 	pause_panel = panel(root, Vector2(390, 113), Vector2(500, 503), Color(.10, .09, .14, .98))
 	label(pause_panel, "UM RESPIRO.", Vector2(32, 25), Vector2(440, 55), 39)
 	button(pause_panel, "VOLTAR AO JOGO", Vector2(32, 99), Vector2(436, 45), func(): resume_game.emit())
@@ -176,6 +184,16 @@ func _ready() -> void:
 	credit_label.add_theme_color_override("font_outline_color", ink)
 	credit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	credit_label.text = "MC VV / BONDA\nModelagem, cenários e código novos\nUm projeto de fã. Sem participação oficial dos artistas."
+	extras = panel(root, Vector2(140, 70), Vector2(1000, 580), Color(.10, .09, .14, .99))
+	extras_title = label(extras, "", Vector2(32, 24), Vector2(930, 46), 32, accent)
+	extras_text = RichTextLabel.new()
+	extras.add_child(extras_text)
+	extras_text.position = Vector2(32, 90)
+	extras_text.size = Vector2(936, 400)
+	extras_text.add_theme_font_size_override("normal_font_size", 22)
+	extras_text.bbcode_enabled = false
+	extras_close = button(extras, "VOLTAR", Vector2(32, 514), Vector2(220, 44), close_extras)
+	extras.hide()
 	combat(false)
 
 func style(color: Color, border: Color, width: int = 1, radius: int = 0) -> StyleBoxFlat:
@@ -335,6 +353,7 @@ func failure(reason: String) -> void:
 	result_button.grab_focus()
 
 func show_menu(on: bool) -> void:
+	extras.hide()
 	menu.visible = on
 	hud.visible = not on
 	credit_label.visible = on
@@ -349,3 +368,23 @@ func transition(text: String, duration: float = 1.2) -> void:
 	t.tween_property(veil, "color:a", 0.0, .5)
 	t.parallel().tween_property(banner, "modulate:a", 0.0, .5)
 	await t.finished
+
+func show_extras(changelog: bool) -> void:
+	menu.hide()
+	credit_label.hide()
+	extras_title.text = "NOVIDADES / HISTÓRICO DE VERSÕES" if changelog else "CONQUISTAS"
+	if changelog:
+		extras_text.text = FileAccess.get_file_as_string("res://CHANGELOG.txt")
+	elif home_achievement:
+		extras_text.text = "1 / 1 desbloqueada\n\nCAJA SUSA, CHÃO SUJO...\n\nVocê arrumou e limpou tudo na casa.\n\nConquista permanente: novas partidas não apagam esta descoberta."
+	else:
+		extras_text.text = "0 / 1 desbloqueada\n\n???\n\nConquista secreta. Explore e descubra."
+	extras_text.scroll_to_line(0)
+	extras.show()
+	extras_close.grab_focus()
+
+func close_extras() -> void:
+	extras.hide()
+	menu.show()
+	credit_label.show()
+	menu.get_node("Continue").grab_focus()

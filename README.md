@@ -1,15 +1,15 @@
-﻿# ðŸ•¹ï¸ BONDAONDA â€” DimensÃ£o Void & Filtro VHS (v0.3)
+﻿# ðŸ•¹ï¸ BONDAONDA â€” Quarto PÃ³s-Portal & Conquistas (v0.4)
 
 > Projeto de jogo 3D retrÃ´ estilo PS1 inspirado no universo conceitual dos Ã¡lbuns **BONDA**.
 
-## ðŸ“– Novidades da VersÃ£o 0.3
-ImplementaÃ§Ã£o do prÃ³logo cÃ³smico do **Vazio (The Void)**, conectando o salto multiversal Ã  primeira fase.
+## ðŸ“– Novidades da VersÃ£o 0.4
+CriaÃ§Ã£o do quarto degradado pÃ³s-teleporte, sistema de tarefas interativas de limpeza e conquistas persistentes.
 
 ### âœ¨ Principais Recursos:
-- **CenÃ¡rio CÃ³smico Surrealista:** Montanhas invertidas flutuantes, rios em corda e escadaria suspensa de 80 degraus rumo ao portal supremo (inspirado em *Quebrando Barreiras* e *Me Sinto Feliz*).
-- **NPC Michael Jackson:** DiÃ¡logo cinematogrÃ¡fico legendado explicando as consequÃªncias cÃ³smicas do colapso dimensional, com efeito sonoro clÃ¡ssico (*michael_hee.mp3*).
-- **Shader VHS RetrÃ´:** Efeito visual analÃ³gico de fita VHS acionÃ¡vel e alternÃ¡vel em tempo real pela tecla `V`.
-- **Controle de Pausa:** Congelamento total da fÃ­sica e das cÃ¢meras durante o menu sem quebra de estado.
+- **Apartamento Decadente:** Ambiente pÃ³s-portal com colchÃ£o manchado, TV de tubo em mesa vermelha de plÃ¡stico, latas de Skol e Monster, louÃ§a acumulada e recado na parede: *"Consulta hoje Ã s 16:00"*.
+- **17 InteraÃ§Ãµes Ambientais:** Lixos e objetos com detecÃ§Ã£o por proximidade para faxina opcional do quarto.
+- **Conquista Secreta:** Desbloqueio da conquista persistente *"Caja susa, chÃ£o sujo..."* ao limpar todo o lixo do quarto.
+- **Menus de Extras:** Nova tela de Conquistas e visualizador de Novidades lendo dinamicamente `CHANGELOG.txt`.
 
 ### ðŸš€ Como Executar:
 Abra o projeto com a **Godot Engine 4.3** selecionando `project.godot`.
