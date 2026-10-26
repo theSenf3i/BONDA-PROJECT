@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dkthailkns5n7"
-path="res://.godot/imported/08_taxi_escolhas.png-2337f9ced34618cfaa0936d6398a43a4.ctex"
+uid="uid://dg114tri7tlxg"
+path="res://.godot/imported/void_02_overview.png-13c41538457609f91e9b3a840630f952.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://tests/08_taxi_escolhas.png"
-dest_files=["res://.godot/imported/08_taxi_escolhas.png-2337f9ced34618cfaa0936d6398a43a4.ctex"]
+source_file="res://tests/void_02_overview.png"
+dest_files=["res://.godot/imported/void_02_overview.png-13c41538457609f91e9b3a840630f952.ctex"]
 
 [params]
 

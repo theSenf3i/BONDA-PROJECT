@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bfkd431uaehyf"
-path="res://.godot/imported/02_bairro.png-16dc9244e3fb536252cf115e02a0353c.ctex"
+uid="uid://dv531l6ov256v"
+path="res://.godot/imported/void_01_entry.png-c25d100d6d08cdd75014526c021d10e0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://tests/02_bairro.png"
-dest_files=["res://.godot/imported/02_bairro.png-16dc9244e3fb536252cf115e02a0353c.ctex"]
+source_file="res://tests/void_01_entry.png"
+dest_files=["res://.godot/imported/void_01_entry.png-c25d100d6d08cdd75014526c021d10e0.ctex"]
 
 [params]
 

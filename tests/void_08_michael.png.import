@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bjyv6iepo1lgf"
-path="res://.godot/imported/09_reinicio.png-583724188173754ab6db157ebd557039.ctex"
+uid="uid://cgtvpnpvv34jh"
+path="res://.godot/imported/void_08_michael.png-43fa28ab6cc3887271d5b91161f9053e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://tests/09_reinicio.png"
-dest_files=["res://.godot/imported/09_reinicio.png-583724188173754ab6db157ebd557039.ctex"]
+source_file="res://tests/void_08_michael.png"
+dest_files=["res://.godot/imported/void_08_michael.png-43fa28ab6cc3887271d5b91161f9053e.ctex"]
 
 [params]
 

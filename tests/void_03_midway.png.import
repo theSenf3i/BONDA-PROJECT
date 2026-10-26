@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cfok265ensbhj"
-path="res://.godot/imported/03_clinica.png-95dfa32e417ab15c1368599771fddfb4.ctex"
+uid="uid://bs1xvf8bpt32r"
+path="res://.godot/imported/void_03_midway.png-cfda3b5e721b7d8e7a92ce5e9816e6be.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://tests/03_clinica.png"
-dest_files=["res://.godot/imported/03_clinica.png-95dfa32e417ab15c1368599771fddfb4.ctex"]
+source_file="res://tests/void_03_midway.png"
+dest_files=["res://.godot/imported/void_03_midway.png-cfda3b5e721b7d8e7a92ce5e9816e6be.ctex"]
 
 [params]
 

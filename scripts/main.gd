@@ -44,8 +44,31 @@ var test_mode = false
 var last_failure = ""
 var dead = false
 
+var void_environment: WorldEnvironment
+var default_environment: Environment
+var void_sun: DirectionalLight3D
+var void_filter: ColorRect
+var void_hud: CanvasLayer
+var void_heading: Label
+var void_clock_label: Label
+var void_caption: Label
+var void_prompt: Label
+var void_filter_label: Label
+var void_elapsed = 0.0
+var void_rest_index = 0
+var void_cue_index = 0
+var void_caption_time = 0.0
+var void_respawns = 0
+var void_reduced = false
+var void_sequence: Node
+var void_goal: Label
+var void_controls: Label
+var void_speaker: Label
+var void_michael_cooldown = 0.0
+var void_intro_seen = false
+
 func _ready() -> void:
-	test_mode = "--qa" in OS.get_cmdline_user_args()
+	test_mode = "--qa" in OS.get_cmdline_user_args() or "--qa-void" in OS.get_cmdline_user_args() or "--capture-void" in OS.get_cmdline_user_args()
 	inputs()
 	visits = load("res://scripts/visits.gd").new()
 	visits.g = self
@@ -72,8 +95,13 @@ func _ready() -> void:
 	cinema = Camera3D.new()
 	add_child(cinema)
 	cinema.fov = 54
+	setup_void_presentation()
 	to_menu()
-	if test_mode:
+	if "--void" in OS.get_cmdline_user_args():
+		start_void()
+	if "--qa-void" in OS.get_cmdline_user_args() or "--capture-void" in OS.get_cmdline_user_args():
+		call_deferred("run_void_checks")
+	if "--qa" in OS.get_cmdline_user_args():
 		call_deferred("run_qa")
 	if "--capture" in OS.get_cmdline_user_args():
 		call_deferred("capture_showcase")
@@ -112,9 +140,10 @@ func rebuild(kind: String, spawn: Vector3, view_angle: float = 0.0) -> void:
 	if is_instance_valid(world):
 		remove_child(world)
 		world.queue_free()
-	world = load("res://scripts/world.gd").new()
+	world = load("res://scripts/void_world.gd" if kind == "void" else "res://scripts/world.gd").new()
 	add_child(world)
 	world.build(kind)
+	apply_void_presentation(kind == "void")
 	player = load("res://scripts/player.gd").new()
 	world.add_child(player)
 	player.position = spawn
@@ -146,7 +175,8 @@ func set_play() -> void:
 	player.enabled = true
 	player.camera.current = true
 	sound.duck = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if not test_mode:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func set_objective(chapter: String, text: String) -> void:
 	ui.chapter.text = chapter
@@ -163,10 +193,11 @@ func save_checkpoint(value: String) -> void:
 	checkpoint = value
 	if test_mode:
 		return
-	DirAccess.make_dir_recursive_absolute("res://save")
+	if not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path("res://save")):
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://save"))
 	var file = FileAccess.open("res://save/checkpoint.json", FileAccess.WRITE)
 	if file:
-		file.store_string(JSON.stringify({"stage": value, "memories": memories_found, "version": 2, "papers": visits.collected, "coffee": visits.coffee_level}))
+		file.store_string(JSON.stringify({"stage": value, "memories": memories_found, "version": 3, "void_intro_seen": void_intro_seen, "papers": visits.collected, "coffee": visits.coffee_level}))
 
 func to_menu() -> void:
 	pause_game(false)
@@ -186,10 +217,11 @@ func to_menu() -> void:
 
 func new_game() -> void:
 	memories_found = 0
+	void_intro_seen = false
 	visits.collected.clear()
 	ui.show_menu(false)
 	ui.result_panel.hide()
-	start_home()
+	start_void()
 
 func continue_saved() -> void:
 	var file = FileAccess.open("res://save/checkpoint.json", FileAccess.READ)
@@ -197,6 +229,7 @@ func continue_saved() -> void:
 		var data = JSON.parse_string(file.get_as_text())
 		if data is Dictionary:
 			checkpoint = data.get("stage", "home")
+			void_intro_seen = bool(data.get("void_intro_seen", false))
 			visits.collected = data.get("papers", [])
 			visits.coffee_level = float(data.get("coffee", 100.0))
 			memories_found = int(data.get("memories", 0))
@@ -725,6 +758,7 @@ func retry_checkpoint() -> void:
 	ui.close_dialog()
 	ui.show_menu(false)
 	match checkpoint:
+		"void": start_void()
 		"home": start_home()
 		"neighborhood": start_neighborhood()
 		"taxi": rebuild("neighborhood", Vector3(-8, .2, 4.8)); start_taxi()
@@ -791,6 +825,18 @@ func select_choice(index: int) -> void:
 
 func interact() -> void:
 	if state != "play":
+		return
+	if stage == "void":
+		if player.position.distance_to(world.michael.position) < 2.8:
+			if void_michael_cooldown <= 0:
+				void_michael_cooldown = 2.5
+				void_speaker.text = "MICHAEL"
+				void_caption.text = "Hee hee"
+				void_caption_time = 2.2
+				world.michael_reaction = 1.0
+				sound.effect("michael_hee")
+			return
+		enter_void_portal()
 		return
 	if visits.interact():
 		return
@@ -893,6 +939,9 @@ func _process(dt: float) -> void:
 		var p: Vector3 = world.taxi.position
 		cinema.position = p + Vector3(5.4, 3.6, 6.6)
 		cinema.look_at(p + Vector3(.4, .7, 0))
+	if stage == "void":
+		void_tick(dt)
+		return
 	world.traffic_enabled = state == "play" and stage in ["neighborhood", "clinic_street", "coffee", "stroll"]
 	world.pedestrians_paused = state in ["dialogue", "gameover"]
 	if state == "play":
@@ -914,6 +963,15 @@ func _process(dt: float) -> void:
 			sparks.remove_at(i)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if stage == "void" and state == "cutscene" and not paused and event.is_action_pressed("interact") and not event.is_echo():
+		if is_instance_valid(void_sequence) and void_sequence.running:
+			void_sequence.advance()
+			get_viewport().set_input_as_handled()
+			return
+	if stage == "void" and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_V:
+		void_reduced = not void_reduced
+		void_filter.material.set_shader_parameter("strength", 0.15 if void_reduced else 1.0)
+		void_filter_label.text = "V  restaurar VHS   ·   ESC  pausa" if void_reduced else "V  reduzir VHS   ·   ESC  pausa"
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE and state != "menu":
 			pause_game(not paused)
@@ -930,9 +988,11 @@ func pause_game(value: bool) -> void:
 	if not is_instance_valid(ui):
 		return
 	ui.pause_panel.visible = value
+	if is_instance_valid(void_hud):
+		void_hud.visible = stage == "void" and not value
 	if value:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	elif state == "play":
+	elif state == "play" and not test_mode:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	else:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -950,5 +1010,183 @@ func capture_showcase() -> void:
 
 func capture_revision() -> void:
 	var suite = load("res://tests/revision_capture.gd").new()
+	add_child(suite)
+	await suite.run(self)
+
+func setup_void_presentation() -> void:
+	for child in get_children():
+		if child is WorldEnvironment:
+			void_environment = child
+			default_environment = child.environment.duplicate(true)
+		if child is DirectionalLight3D:
+			void_sun = child
+	var post = CanvasLayer.new()
+	post.layer = 0
+	add_child(post)
+	void_filter = ColorRect.new()
+	void_filter.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	void_filter.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	void_filter.material = ShaderMaterial.new()
+	void_filter.material.shader = load("res://shaders/void_tape.gdshader")
+	post.add_child(void_filter)
+	void_filter.hide()
+	void_hud = CanvasLayer.new()
+	void_hud.layer = 2
+	add_child(void_hud)
+	var overlay = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	void_hud.add_child(overlay)
+	void_heading = ui.label(overlay, "FITA 00    /    FORA DO TEMPO", Vector2(38, 30), Vector2(640, 24), 17, Color("c0c8c2"))
+	void_goal = ui.label(overlay, "Encontre a porta no alto da escadaria.", Vector2(38, 61), Vector2(700, 38), 23, Color("ede5cf"))
+	void_clock_label = ui.label(overlay, "REPRODUÇÃO   00:00", Vector2(925, 30), Vector2(320, 25), 17, Color("c0c8c2"))
+	void_clock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	void_caption = ui.label(overlay, "", Vector2(190, 522), Vector2(900, 76), 26, Color("f1ecd9"))
+	void_speaker = ui.label(overlay, "", Vector2(190, 489), Vector2(900, 27), 19, Color("c0cfcd"))
+	void_speaker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	void_speaker.add_theme_constant_override("outline_size", 6)
+	void_speaker.add_theme_color_override("font_outline_color", Color("101b21"))
+	void_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	void_caption.add_theme_constant_override("outline_size", 8)
+	void_caption.add_theme_color_override("font_outline_color", Color("101b21"))
+	void_prompt = ui.label(overlay, "", Vector2(270, 605), Vector2(740, 36), 23, Color("f2e2bb"))
+	void_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	void_prompt.add_theme_constant_override("outline_size", 6)
+	void_prompt.add_theme_color_override("font_outline_color", Color("101b21"))
+	void_controls = ui.label(overlay, "WASD  caminhar     SHIFT  correr     MOUSE  olhar     E  atravessar", Vector2(38, 667), Vector2(950, 25), 15, Color("bdc8c1"))
+	void_filter_label = ui.label(overlay, "V  reduzir VHS   ·   ESC  pausa", Vector2(904, 667), Vector2(340, 25), 15, Color("bdc8c1"))
+	void_filter_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	void_hud.hide()
+
+func apply_void_presentation(active: bool) -> void:
+	if not is_instance_valid(void_filter):
+		return
+	void_filter.visible = active
+	void_hud.visible = active
+	void_filter.material.set_shader_parameter("whiteout", 0.0)
+	ui.hud.visible = not active and stage != "menu"
+	if not active:
+		void_environment.environment = default_environment.duplicate(true)
+		void_sun.light_color = Color("ffd4a2")
+		void_sun.light_energy = 0.72
+		void_sun.rotation_degrees = Vector3(-35, -35, 0)
+		return
+	var env = Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color("0b1b25")
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("8caeb5")
+	env.ambient_light_energy = 0.63
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.fog_enabled = true
+	env.fog_light_color = Color("112732")
+	env.fog_density = 0.0024
+	void_environment.environment = env
+	void_sun.light_color = Color("b7c5c2")
+	void_sun.light_energy = 0.9
+	void_sun.rotation_degrees = Vector3(-28, -42, -12)
+
+func start_void() -> void:
+	stage = "void"
+	ui.close_dialog()
+	ui.show_menu(false)
+	ui.result_panel.hide()
+	rebuild("void", Vector3(0, 0.12, 12))
+	player.bounds = Vector2(100, 180)
+	player.distance = 5.7
+	player.pitch = 0.08
+	player.walk_speed = 3.6
+	player.run_speed = 5.8
+	player.reset_on_fall = false
+	player.camera.far = 450
+	void_elapsed = 0
+	void_rest_index = 0
+	void_cue_index = 0
+	void_caption_time = 6.0
+	void_caption.text = "Não tô mais em casa."
+	void_respawns = 0
+	void_michael_cooldown = 0.0
+	void_speaker.text = ""
+	void_goal.visible = true
+	void_controls.visible = true
+	save_checkpoint("void")
+	set_objective("00 / FORA DO TEMPO", "Encontre a porta no alto da escadaria.")
+	if sound.fade and sound.fade.is_valid():
+		sound.fade.kill()
+	for track_player in sound.players:
+		track_player.stop()
+	sound.current = ""
+	sound.title = ""
+	set_play()
+	apply_void_presentation(true)
+	if not void_intro_seen:
+		void_sequence = load("res://scripts/void_sequence.gd").new()
+		world.add_child(void_sequence)
+		void_sequence.begin(self)
+
+func void_tick(dt: float) -> void:
+	void_elapsed += dt
+	void_michael_cooldown = maxf(0, void_michael_cooldown - dt)
+	void_filter.material.set_shader_parameter("tape_time", void_elapsed)
+	void_clock_label.text = "REPRODUÇÃO   %02d:%02d" % [int(void_elapsed) / 60, int(void_elapsed) % 60]
+	void_caption_time -= dt
+	void_caption.modulate.a = clampf(void_caption_time, 0, 1)
+	void_speaker.modulate.a = void_caption.modulate.a
+	if state != "play":
+		return
+	for i in range(world.rest_points.size()):
+		var p: Vector3 = world.rest_points[i]
+		if i > void_rest_index and Vector2(player.position.x - p.x, player.position.z - p.z).length() < 3.5 and absf(player.position.y - p.y) < 1.3:
+			void_rest_index = i
+	var safe: Vector3 = world.rest_points[void_rest_index]
+	if player.position.y < safe.y - 6.0:
+		player.position = safe + Vector3(0, 0.25, 0)
+		player.velocity = Vector3.ZERO
+		void_respawns += 1
+		void_speaker.text = ""
+		void_caption.text = "Mesmo perdido, sigo em frente."
+		void_caption_time = 4.0
+	var cues = [
+		[-19.0, "Montanhas dentro de lagos."],
+		[-46.0, "Cidades inexistentes. Universos paralelos."],
+		[-73.0, "Nada mais tem um sentido."],
+		[-96.0, "Robson, cê me espera que eu já tô chegando."]
+	]
+	if void_cue_index < cues.size() and player.position.z < cues[void_cue_index][0]:
+		void_speaker.text = "JÚNIOR"
+		void_caption.text = cues[void_cue_index][1]
+		void_caption_time = 4.5
+		void_cue_index += 1
+	var near_door = player.position.distance_to(world.PORTAL_POSITION + Vector3(0, 0, 1.4)) < 3.4
+	var near_michael = player.position.distance_to(world.michael.position) < 2.8
+	void_prompt.text = "[ E ]  Falar com Michael" if near_michael else ("[ E ]  Atravessar a porta" if near_door else "")
+
+func enter_void_portal() -> void:
+	if state != "play" or player.position.distance_to(world.PORTAL_POSITION + Vector3(0, 0, 1.4)) >= 3.4:
+		return
+	var serial = transition_serial
+	state = "cutscene"
+	player.enabled = false
+	player.velocity = Vector3.ZERO
+	void_prompt.text = ""
+	void_speaker.text = "JÚNIOR"
+	void_caption.text = "Uma porta tá se abrindo."
+	void_caption_time = 5.0
+	sound.effect("portal")
+	var tween = create_tween().set_parallel(true)
+	tween.tween_property(void_filter.material, "shader_parameter/whiteout", 1.0, 1.4).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tween.tween_property(player, "position", world.PORTAL_POSITION + Vector3(0, 0.7, 0.5), 1.4)
+	await tween.finished
+	if serial != transition_serial or stage != "void":
+		return
+	start_home()
+	ui.veil.color = Color(1, 0.98, 0.88, 1)
+	var reveal = create_tween()
+	reveal.tween_property(ui.veil, "color:a", 0.0, 0.85)
+	await reveal.finished
+	ui.veil.color = Color(0.055, 0.045, 0.075, 0)
+
+func run_void_checks() -> void:
+	var suite = load("res://tests/void_checks.gd").new()
 	add_child(suite)
 	await suite.run(self)

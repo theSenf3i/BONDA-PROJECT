@@ -28,6 +28,7 @@ func _ready() -> void:
 	add_child(sfx)
 	for id in ["step", "select", "hit", "door", "portal", "danger", "jump"]:
 		effects[id] = make_effect(id)
+	effects["michael_hee"] = load("res://audio/michael_hee.mp3")
 
 func play(track: String, begin: float = 0, end: float = 0, force: bool = false) -> void:
 	if not force and current == track and absf(loop_from - begin) < .1 and absf(loop_to - end) < .1:
@@ -63,7 +64,7 @@ func _process(dt: float) -> void:
 func effect(id: String) -> void:
 	if effects.has(id):
 		sfx.stream = effects[id]
-		sfx.pitch_scale = randf_range(.94, 1.06)
+		sfx.pitch_scale = 1.0 if id == "michael_hee" else randf_range(.94, 1.06)
 		sfx.play()
 
 func make_effect(id: String) -> AudioStreamWAV:

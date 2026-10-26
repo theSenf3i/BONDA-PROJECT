@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cr3vnidn3iyh2"
-path="res://.godot/imported/04_luta.png-c60f4740a41b70f277190c5a61417ad4.ctex"
+uid="uid://ctu3lshj40w4w"
+path="res://.godot/imported/void_05_destination.png-dfd1cb2ba368d58dc46c5b8b77b0f899.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://tests/04_luta.png"
-dest_files=["res://.godot/imported/04_luta.png-c60f4740a41b70f277190c5a61417ad4.ctex"]
+source_file="res://tests/void_05_destination.png"
+dest_files=["res://.godot/imported/void_05_destination.png-dfd1cb2ba368d58dc46c5b8b77b0f899.ctex"]
 
 [params]
 

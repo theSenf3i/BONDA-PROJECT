@@ -4,10 +4,14 @@ config_version=5
 config/name="BONDAONDA — Dimensão Dedadão"
 run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
-config/description="Uma aventura de fã em quatro atos. Feita em Godot."
+config/description="Abertura no void VHS e dimensão Dedadão. Feito em Godot."
+config/version="0.3-void-vhs"
+config/use_custom_user_dir=true
+config/custom_user_dir_name="runtime"
 
 [debug]
-file_logging/log_path="res://save/game.log"
+file_logging/enable_file_logging.pc=false
+file_logging/log_path="user://game.log"
 file_logging/max_log_files=2
 
 [display]

@@ -17,6 +17,9 @@ var dash_time = 0.0
 var dash_cooldown = 0.0
 var step_clock = 0.0
 var manual_walk_speed = 0.0
+var walk_speed = 4.3
+var run_speed = 6.3
+var reset_on_fall = true
 signal step
 
 func _ready() -> void:
@@ -78,7 +81,7 @@ func _physics_process(dt: float) -> void:
 	var input = Input.get_vector("left", "right", "forward", "back")
 	var dir = Vector3(input.x, 0, input.y).rotated(Vector3.UP, orbit)
 	block = Input.is_action_pressed("block")
-	var speed = 2.3 if block else (6.3 if Input.is_action_pressed("sprint") else 4.3)
+	var speed = 2.3 if block else (run_speed if Input.is_action_pressed("sprint") else walk_speed)
 	if Input.is_action_just_pressed("dash") and dash_cooldown <= 0 and dir.length() > .2:
 		dash_time = .19
 		dash_cooldown = .95
@@ -103,7 +106,7 @@ func _physics_process(dt: float) -> void:
 					break
 	position.x = clampf(position.x, -bounds.x, bounds.x)
 	position.z = clampf(position.z, -bounds.y, bounds.y)
-	if position.y < -5:
+	if reset_on_fall and position.y < -5:
 		position.y = 1
 		velocity = Vector3.ZERO
 	actor.walk_speed = Vector2(velocity.x, velocity.z).length()
