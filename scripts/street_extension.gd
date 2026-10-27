@@ -1,6 +1,6 @@
 extends Node3D
 
-const LIMIT_X = 180.0
+const LIMIT_X = 52.0
 const LIMIT_Z = 25.0
 
 func barrier(label: String, pos: Vector3, size: Vector3) -> void:

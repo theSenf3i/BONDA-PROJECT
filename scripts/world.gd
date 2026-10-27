@@ -118,6 +118,9 @@ func text3(parent: Node3D, text: String, pos: Vector3, size: int = 48, tint: Col
 	node.outline_modulate = Color("302a35")
 	parent.add_child(node)
 	node.position = pos
+	if extended_street:
+		node.layers = 0
+		node.add_to_group("street_text")
 	return node
 
 func actor(kind: String, pos: Vector3, angle: float = 0.0) -> Node3D:
@@ -227,9 +230,18 @@ func lamp(pos: Vector3) -> void:
 	light.light_energy = .8
 
 func car(pos: Vector3, color: Color, is_taxi: bool = false) -> Node3D:
-	var c = Node3D.new()
+	var c = CharacterBody3D.new()
+	c.collision_layer = 2
+	c.collision_mask = 2
+	c.safe_margin = .02
 	add_child(c)
 	c.position = pos
+	var collision = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(4.0, 1.55, 1.86)
+	collision.shape = shape
+	collision.position.y = .85
+	c.add_child(collision)
 	var body = Node3D.new()
 	body.name = "CarBody"
 	c.add_child(body)
@@ -323,13 +335,15 @@ func neighborhood() -> void:
 	for x in range(-48, 54, 24):
 		cylinder(self, Vector3(x, 3.5, -7), .12, 7, Color("756e67"))
 		box(self, Vector3(x + 12, 6.6, -7), Vector3(24, .025, .025), Color("34343c"))
-	taxi = car(Vector3(-8, 0, 2.6), Color("d9ad53"), true)
+	taxi = car(Vector3(-8, 0, 3.35), Color("d9ad53"), true)
 	text3(self, "PONTO DE TÁXI", Vector3(-8, 2.4, 5.8), 28)
-	for i in range(5):
-		var c = car(Vector3(-45 + 19 * i, 0, -2.2 if i % 2 else 1.5), palette[i])
+	for i in range(12 if extended_street else 5):
+		var direction = -1 if i % 2 else 1
+		var x = -68.0 + floori(i / 2.0) * 26.0 + (10.0 if i % 2 else 0.0) if extended_street else -45.0 + 19 * i
+		var c = car(Vector3(x, 0, -2.2 if i % 2 else 1.3), palette[i % palette.size()])
 		if i % 2:
 			c.rotation.y = PI
-		cars.append({"node": c, "speed": 4.0 + i, "dir": -1 if i % 2 else 1})
+		cars.append({"node": c, "speed": 5.5 + (i % 2) * .5, "dir": direction, "current_speed": 0.0})
 	var roster = load("res://scripts/neighbors.gd").ROSTER
 	for i in range(roster.size()):
 		var entry = roster[i]
@@ -349,7 +363,7 @@ func neighborhood() -> void:
 		tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		tag.visibility_range_end = 12
 	if extended_street:
-		traffic_extent = 320.0
+		traffic_extent = 78.0
 		var extension = load("res://scripts/street_extension.gd").new()
 		extension.name = "StreetExtension"
 		add_child(extension)
@@ -483,20 +497,61 @@ func create_portal(pos: Vector3) -> Node3D:
 	text3(portal, "A PRÓXIMA DIMENSÃO", Vector3(0, 3.6, 0), 28)
 	return portal
 
+func vehicle_gap(vehicle: Node3D, direction: float) -> float:
+	var gap = INF
+	var vehicles: Array = cars.map(func(e): return e.node)
+	if is_instance_valid(taxi):
+		vehicles.append(taxi)
+	for other in vehicles:
+		if other == vehicle or absf(other.position.z - vehicle.position.z) >= 1.9:
+			continue
+		var ahead = (other.position.x - vehicle.position.x) * direction
+		if ahead > 0:
+			gap = minf(gap, ahead - 4.05)
+	return maxf(gap, 0.0)
+
+func advance_vehicle(vehicle: CharacterBody3D, distance: float, direction: float, dt: float) -> float:
+	var allowed = minf(distance, maxf(0, vehicle_gap(vehicle, direction) - .7))
+	var old_x = vehicle.position.x
+	vehicle.move_and_collide(Vector3(allowed * direction, 0, 0))
+	var speed = absf(vehicle.position.x - old_x) / maxf(dt, .0001)
+	animate_vehicle(vehicle, speed, dt)
+	return speed
+
+func wrap_vehicle(vehicle: Node3D, direction: float) -> void:
+	if absf(vehicle.position.x) <= traffic_extent:
+		return
+	var spawn_x = -traffic_extent * direction
+	for other in cars:
+		if other.node != vehicle and absf(other.node.position.z - vehicle.position.z) < 1.9 and absf(other.node.position.x - spawn_x) < 6.0:
+			return
+	if is_instance_valid(taxi) and absf(taxi.position.z - vehicle.position.z) < 1.9 and absf(taxi.position.x - spawn_x) < 6.0:
+		return
+	vehicle.position.x = spawn_x
+
 func _physics_process(dt: float) -> void:
+	if is_instance_valid(taxi):
+		if moving_taxi and taxi_progress < 28.0:
+			var taxi_speed = advance_vehicle(taxi, minf(dt, 28.0 - taxi_progress), 1, dt)
+			taxi_progress = minf(28.0, taxi_progress + taxi_speed * dt)
+		else:
+			animate_vehicle(taxi, 0, dt)
 	for entry in cars:
-		var c: Node3D = entry.node
+		var c: CharacterBody3D = entry.node
 		var old_position = c.position
-		c.position.x += entry.speed * entry.dir * dt
-		animate_vehicle(c, entry.speed, dt)
+		var gap = vehicle_gap(c, entry.dir)
+		var desired = minf(entry.speed, maxf(0, (gap - 1.2) * 1.3))
+		if desired < .03:
+			desired = 0.0
+		entry.current_speed = move_toward(entry.current_speed, desired, dt * (9.0 if desired < entry.current_speed else 2.5))
+		advance_vehicle(c, entry.current_speed * dt, entry.dir, dt)
 		if traffic_enabled and is_instance_valid(pedestrian):
-			var bounds = AABB(Vector3(-2.16, -1.82, -1.04), Vector3(4.32, 3.42, 2.08))
+			var bounds = AABB(Vector3(-2.36, -1.82, -1.25), Vector3(4.72, 3.42, 2.5))
 			var contact = bounds.intersects_segment(previous_pedestrian - old_position, pedestrian.position - c.position)
 			if contact != null:
 				traffic_enabled = false
 				car_hit.emit()
-		if abs(c.position.x) > traffic_extent:
-			c.position.x = -traffic_extent * entry.dir
+		wrap_vehicle(c, entry.dir)
 	if is_instance_valid(pedestrian):
 		previous_pedestrian = pedestrian.position
 	for a in actors:
@@ -525,14 +580,6 @@ func _physics_process(dt: float) -> void:
 
 func _process(dt: float) -> void:
 	clock += dt
-	if is_instance_valid(taxi):
-		var taxi_speed = 0.0
-		if moving_taxi:
-			var previous_x = taxi.position.x
-			taxi_progress = minf(taxi_progress + dt * 1.0, 28.0)
-			taxi.position.x = -8 + taxi_progress
-			taxi_speed = maxf(0.0, (taxi.position.x - previous_x) / maxf(dt, .0001))
-		animate_vehicle(taxi, taxi_speed, dt)
 	if is_instance_valid(portal):
 		portal.rotation.y = sin(clock * .5) * .12
 

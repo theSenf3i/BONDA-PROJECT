@@ -1,16 +1,21 @@
-﻿# ðŸ•¹ï¸ BONDAONDA â€” Bairro Noturno & Shaders Urbanos (v0.6)
+# BONDAONDA v0.7 — Nomes legíveis e trânsito presente
 
-> Projeto de jogo 3D retrÃ´ estilo PS1 inspirado no universo conceitual dos Ã¡lbuns **BONDA**.
+Extraia a pasta e abra JOGAR.bat. Escolha NOVA PARTIDA para o percurso:
+void → Michael → escadaria → portal → casa bagunçada → rua → táxi.
 
-## ðŸ“– Novidades da VersÃ£o 0.6
-ExpansÃ£o urbana do bairro com neblina volumÃ©trica, pixelation retrÃ´ e animaÃ§Ã£o dinÃ¢mica de veÃ­culos.
+Na casa, comentários de limpeza duram 2 segundos; "Pronto" dura 1 segundo.
+Limpar permanece opcional. Conquista e falas da chegada estão preservadas.
 
-### âœ¨ Principais Recursos:
-- **Rua Noturna Estendida:** 360 metros de extensÃ£o delimitada com barreira fÃ­sica nas extremidades.
-- **Shaders Visuais RetrÃ´:**
-  * `street_fog.gdshader`: Neblina volumÃ©trica gradual (15m a 60m) com atmosfera sombria.
-  * `street_pixels.gdshader`: Pipeline de pixelation estilo PS1 nativo (320x180).
-- **FÃ­sica e AnimaÃ§Ã£o de Carros:** SuspensÃ£o procedural oscilante e rotaÃ§Ã£o de rodas sincronizada com a velocidade de deslocamento.
+A rua antes do táxi tem 104 metros exploráveis, limites invisíveis e cenário
+continuando na neblina. Visual escuro e pixelizado, com interface legível.
+Doze carros circulam perto da casa, com frenagem, colisão física e rodas animadas.
+Nomes e indicações da rua aparecem nítidos sobre a pixelização.
 
-### ðŸš€ Como Executar:
-Abra o projeto com a **Godot Engine 4.3** selecionando `project.godot`.
+WASD: andar. SHIFT: correr. Mouse: câmera. E: interagir. ESC: pausa.
+CONTINUAR retoma o checkpoint. Para importar progresso anterior, copie a
+pasta save da versão anterior para esta antes de abrir. NOVA PARTIDA
+reinicia a campanha; conquistas permanentes são mantidas.
+
+PLAY_HOME.bat abre o mesmo menu; PLAY_VOID.bat abre a sequência do void.
+Menu Novidades e CHANGELOG.txt compartilham o histórico completo.
+Nenhum save de teste é incluído no pacote.

@@ -38,12 +38,12 @@ func finish() -> void:
 	get_tree().quit(0 if failed.is_empty() else 1)
 
 func test_extended_street() -> void:
-	check("Street is 360 meters wide and has geometry beyond limits", g.player.bounds.x == 180 and g.world.extended_street and g.world.traffic_extent > 180)
+	check("Street is compact and has geometry beyond limits", g.player.bounds.x == 52 and g.world.extended_street and g.world.traffic_extent > 52)
 	var edge = g.world.get_node("StreetExtension/EastLimit")
 	check("Boundary uses only invisible collision", edge is StaticBody3D and edge.get_child_count() == 1 and edge.get_child(0) is CollisionShape3D)
 	check("Fog conceals distant continuation", g.void_environment.environment.fog_enabled and g.void_environment.environment.fog_density >= .02)
 	g.world.traffic_enabled = false
-	g.player.position = Vector3(178.8, .25, 5.6)
+	g.player.position = Vector3(50.8, .25, 5.6)
 	g.player.orbit = -PI / 2
 	g.player.camera_fixed = true
 	Input.action_press("forward")
@@ -51,13 +51,13 @@ func test_extended_street() -> void:
 	await get_tree().create_timer(.7).timeout
 	Input.action_release("forward")
 	Input.action_release("sprint")
-	check("East boundary stops physical movement", g.player.position.x < 179.8 and g.player.position.x > 178.8)
-	g.player.position = Vector3(-178.8, .25, 5.6)
+	check("East boundary stops physical movement", g.player.position.x < 51.8 and g.player.position.x > 50.8)
+	g.player.position = Vector3(-50.8, .25, 5.6)
 	g.player.orbit = PI / 2
 	Input.action_press("forward")
 	await get_tree().create_timer(.7).timeout
 	Input.action_release("forward")
-	check("West boundary stops physical movement", g.player.position.x > -179.8 and g.player.position.x < -178.8)
+	check("West boundary stops physical movement", g.player.position.x > -51.8 and g.player.position.x < -50.8)
 	g.player.camera_fixed = false
 	g.player.position = Vector3(-8, .2, 5.5)
 	check("Taxi stays close to house route", g.world.taxi.position.distance_to(Vector3(-22, 0, 7.6)) < 18)
@@ -82,7 +82,7 @@ func test_street_style() -> void:
 	g.cinema.position = Vector3(-31, 3.5, 6.5)
 	g.cinema.look_at(Vector3(35, 2, -1))
 	await snapshot("street_long_view")
-	g.cinema.position = Vector3(176, 2.4, 5.8)
+	g.cinema.position = Vector3(50, 2.4, 5.8)
 	g.cinema.look_at(Vector3(260, 2.4, 2))
 	await snapshot("street_fog_boundary")
 	g.start_home()

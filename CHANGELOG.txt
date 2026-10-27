@@ -1,6 +1,26 @@
 BONDAONDA - CHANGELOG DO PROJETO
-Histórico até a versão 0.6
+Histórico até a versão 0.7
 Compilado em 26/10/2026
+
+============================================================
+VERSAO 0.7 - NOMES LEGIVEIS E TRANSITO PRESENTE
+============================================================
+- Nomes de NPCs e indicações da rua renderizados acima da pixelização.
+- Texto nítido com fundo escuro, sem sobreposição entre etiquetas próximas.
+- Etiquetas ocultas atrás da câmera, de paredes e fora da distância de leitura.
+- Visual escuro e pixelizado do cenário preservado.
+- Área caminhável reduzida de 360 para 104 metros, mantendo todos os NPCs.
+- Barreiras invisíveis mais próximas; cenário continua além delas na neblina.
+- Doze carros circulam em duas faixas num circuito de 156 metros.
+- Fluxo distribuído para manter veículos nas proximidades da casa.
+- Câmera ao sair de casa voltada para a rua.
+- Carros e táxi possuem colisão física; o jogador não atravessa o táxi parado.
+- Veículos freiam e mantêm distância do carro à frente, retomando quando ele sai.
+- Retorno dos carros no fim do circuito verifica espaço antes de reposicionar.
+- Rodas acompanham o movimento real e param quando o veículo para.
+- Táxi estacionado junto ao meio-fio, sem bloquear a faixa de circulação.
+- Atropelamentos, pausa, transição do portal e progresso preservados.
+- Changelog do menu e este TXT permanecem com o mesmo histórico acumulado.
 
 ============================================================
 VERSAO 0.6 - RUA SOMBRIA E CARROS ANIMADOS

@@ -140,7 +140,7 @@ func _ready() -> void:
 	continue_button.name = "Continue"
 	label(menu, "FAN GAME  •  LEGENDADO  •  TRILHA BONDA", Vector2(32, 590), Vector2(476, 22), 13, Color("b5a6bf"))
 	button(menu, "CONQUISTAS", Vector2(32, 522), Vector2(230, 44), func(): show_extras(false))
-	button(menu, "NOVIDADES / v0.6", Vector2(278, 522), Vector2(230, 44), func(): show_extras(true))
+	button(menu, "NOVIDADES / v0.7", Vector2(278, 522), Vector2(230, 44), func(): show_extras(true))
 	pause_panel = panel(root, Vector2(390, 113), Vector2(500, 503), Color(.10, .09, .14, .98))
 	label(pause_panel, "UM RESPIRO.", Vector2(32, 25), Vector2(440, 55), 39)
 	button(pause_panel, "VOLTAR AO JOGO", Vector2(32, 99), Vector2(436, 45), func(): resume_game.emit())

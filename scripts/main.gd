@@ -50,6 +50,7 @@ var last_failure = ""
 var dead = false
 
 var street_fog: MeshInstance3D
+var street_labels: CanvasLayer
 var street_filter: ColorRect
 var void_environment: WorldEnvironment
 var default_environment: Environment
@@ -77,6 +78,7 @@ var void_intro_seen = false
 func _ready() -> void:
 	test_mode = "--qa" in OS.get_cmdline_user_args() or "--qa-void" in OS.get_cmdline_user_args() or "--capture-void" in OS.get_cmdline_user_args()
 	test_mode = test_mode or "--qa-home" in OS.get_cmdline_user_args() or "--qa-street" in OS.get_cmdline_user_args()
+	test_mode = test_mode or "--qa-fixes" in OS.get_cmdline_user_args()
 	load_home_profile()
 	inputs()
 	visits = load("res://scripts/visits.gd").new()
@@ -107,7 +109,13 @@ func _ready() -> void:
 	cinema.fov = 54
 	setup_void_presentation()
 	setup_street_presentation()
+	street_labels = load("res://scripts/street_labels.gd").new()
+	street_labels.game = self
+	add_child(street_labels)
+	ui.layer = 2
 	to_menu()
+	if "--qa-fixes" in OS.get_cmdline_user_args():
+		call_deferred("run_fix_checks")
 	if "--qa-street" in OS.get_cmdline_user_args():
 		call_deferred("run_street_checks")
 	if "--qa-home" in OS.get_cmdline_user_args():
@@ -189,7 +197,7 @@ func rebuild(kind: String, spawn: Vector3, view_angle: float = 0.0) -> void:
 		player.bounds = Vector2(5.5, 5)
 		player.distance = 3.6
 	if kind == "neighborhood" and world.extended_street:
-		player.bounds = Vector2(180, 25)
+		player.bounds = Vector2(52, 25)
 		player.camera.far = 260
 		void_environment.environment.fog_enabled = true
 		void_environment.environment.fog_density = 0.026
@@ -300,7 +308,7 @@ func finish_home_arrival() -> void:
 
 func start_neighborhood() -> void:
 	stage = "neighborhood"
-	rebuild("neighborhood", Vector3(-22, .22, 7.6), PI)
+	rebuild("neighborhood", Vector3(-22, .22, 7.6), 0)
 	save_checkpoint("neighborhood")
 	set_objective("01 / 04   •   O BAIRRO", "Encontre o táxi amarelo. Explore se quiser.")
 	target(Vector3(-8, 3, 2.6), "TÁXI  ↓")
@@ -325,7 +333,7 @@ func start_taxi() -> void:
 		marker.hide()
 	player.hide()
 	player.enabled = false
-	world.taxi.position = Vector3(-8, 0, 2.6)
+	world.taxi.position = Vector3(-8, 0, 3.35)
 	world.moving_taxi = true
 	world.taxi_progress = 0
 	cinema.current = true
@@ -1340,3 +1348,8 @@ func apply_street_presentation(active: bool) -> void:
 	void_sun.light_color = Color("a3b4be")
 	void_sun.light_energy = .42
 	void_sun.rotation_degrees = Vector3(-20, -55, 0)
+
+func run_fix_checks() -> void:
+	var runner = load("res://tests/street_fix_checks.gd").new()
+	add_child(runner)
+	runner.run(self)

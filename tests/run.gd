@@ -27,7 +27,7 @@ func run(g: Node) -> void:
 	g.player.position = Vector3(0, .1, 4.4)
 	g.interact()
 	check(g.stage == "neighborhood", "Porta leva ao bairro")
-	check(g.world.actors.size() == 9 and g.world.cars.size() == 5, "Bairro contém moradores e trânsito")
+	check(g.world.actors.size() == 9 and g.world.cars.size() == 12, "Bairro contém moradores e trânsito")
 	var original_position: Vector3 = g.player.position
 	Input.action_press("forward")
 	await get_tree().create_timer(.5).timeout

@@ -23,6 +23,7 @@ var reset_on_fall = true
 signal step
 
 func _ready() -> void:
+	collision_mask = 3
 	var collision = CollisionShape3D.new()
 	var capsule = CapsuleShape3D.new()
 	capsule.radius = .32
