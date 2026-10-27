@@ -1,6 +1,26 @@
 BONDAONDA - CHANGELOG DO PROJETO
-Histórico até a versão 0.4
+Histórico até a versão 0.6
 Compilado em 26/10/2026
+
+============================================================
+VERSAO 0.6 - RUA SOMBRIA E CARROS ANIMADOS
+============================================================
+- Comentários da limpeza reduzidos a 2 segundos e frases mais curtas.
+- Confirmações simples de limpeza duram apenas 1 segundo.
+- Rua anterior ao táxi ampliada para 360 metros exploráveis.
+- Muros nas extremidades substituídos por barreiras invisíveis.
+- Asfalto, calçadas e fachadas continuam além dos limites, ocultos pela névoa.
+- Neblina por profundidade, desaparecendo gradualmente entre 15 e 60 metros.
+- Visual noturno, dessaturado e pixelizado em uma grade de 320 x 180.
+- Fachadas gastas, janelas tapadas, rachaduras, poças e fios pendurados.
+- Menus, legendas e comandos permanecem nítidos acima do efeito.
+- Casa, void, clínica e demais trechos preservam suas próprias estéticas.
+- Rodas com giro proporcional à velocidade e detalhes visíveis nas calotas.
+- Carrocerias com oscilação de suspensão durante o deslocamento.
+- Táxi animado durante a viagem; rodas paradas quando o veículo para.
+- Pausa congela deslocamento e animação dos veículos.
+- Novo jogo permanece na sequência void > portal > casa > rua > táxi.
+- Menu identifica o início como Nova partida e lê este changelog acumulado.
 
 ============================================================
 VERSAO 0.5 - DO PORTAL A CASA

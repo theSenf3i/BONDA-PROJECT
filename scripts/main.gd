@@ -3,6 +3,7 @@ extends Node3D
 var home_cleaned: Array = []
 var home_achievement = false
 var home_arrival_seen = false
+const HOME_REMARK_SECONDS = 2.0
 
 var visits: Node
 var world: Node3D
@@ -48,6 +49,8 @@ var test_mode = false
 var last_failure = ""
 var dead = false
 
+var street_fog: MeshInstance3D
+var street_filter: ColorRect
 var void_environment: WorldEnvironment
 var default_environment: Environment
 var void_sun: DirectionalLight3D
@@ -73,7 +76,7 @@ var void_intro_seen = false
 
 func _ready() -> void:
 	test_mode = "--qa" in OS.get_cmdline_user_args() or "--qa-void" in OS.get_cmdline_user_args() or "--capture-void" in OS.get_cmdline_user_args()
-	test_mode = test_mode or "--qa-home" in OS.get_cmdline_user_args()
+	test_mode = test_mode or "--qa-home" in OS.get_cmdline_user_args() or "--qa-street" in OS.get_cmdline_user_args()
 	load_home_profile()
 	inputs()
 	visits = load("res://scripts/visits.gd").new()
@@ -103,7 +106,10 @@ func _ready() -> void:
 	add_child(cinema)
 	cinema.fov = 54
 	setup_void_presentation()
+	setup_street_presentation()
 	to_menu()
+	if "--qa-street" in OS.get_cmdline_user_args():
+		call_deferred("run_street_checks")
 	if "--qa-home" in OS.get_cmdline_user_args():
 		call_deferred("run_home_checks")
 	if "--home" in OS.get_cmdline_user_args():
@@ -154,10 +160,13 @@ func rebuild(kind: String, spawn: Vector3, view_angle: float = 0.0) -> void:
 		world.queue_free()
 	world = load("res://scripts/void_world.gd" if kind == "void" else "res://scripts/world.gd").new()
 	add_child(world)
+	if kind != "void":
+		world.extended_street = kind == "neighborhood" and stage in ["neighborhood", "taxi"]
 	world.build(kind)
 	if kind == "home":
 		world.home.restore(home_cleaned)
 	apply_void_presentation(kind == "void")
+	apply_street_presentation(kind == "neighborhood" and world.extended_street)
 	player = load("res://scripts/player.gd").new()
 	world.add_child(player)
 	player.position = spawn
@@ -179,6 +188,11 @@ func rebuild(kind: String, spawn: Vector3, view_angle: float = 0.0) -> void:
 	if kind in ["home", "clinic"]:
 		player.bounds = Vector2(5.5, 5)
 		player.distance = 3.6
+	if kind == "neighborhood" and world.extended_street:
+		player.bounds = Vector2(180, 25)
+		player.camera.far = 260
+		void_environment.environment.fog_enabled = true
+		void_environment.environment.fog_density = 0.026
 	if kind == "restaurant":
 		player.bounds = Vector2(13, 9)
 	if kind == "parking":
@@ -211,7 +225,7 @@ func save_checkpoint(value: String) -> void:
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://save"))
 	var file = FileAccess.open("res://save/checkpoint.json", FileAccess.WRITE)
 	if file:
-		file.store_string(JSON.stringify({"stage": value, "memories": memories_found, "version": 5, "home_arrival_seen": home_arrival_seen, "home_cleaned": home_cleaned, "void_intro_seen": void_intro_seen, "papers": visits.collected, "coffee": visits.coffee_level}))
+		file.store_string(JSON.stringify({"stage": value, "memories": memories_found, "version": 6, "home_arrival_seen": home_arrival_seen, "home_cleaned": home_cleaned, "void_intro_seen": void_intro_seen, "papers": visits.collected, "coffee": visits.coffee_level}))
 
 func to_menu() -> void:
 	pause_game(false)
@@ -1265,18 +1279,64 @@ func clean_home_nearby() -> bool:
 			ui.notify("CONQUISTA DESBLOQUEADA\nCaja susa, chão sujo...")
 		else:
 			var remarks = {
-				"mattress": "Júnior: Robson, quando eu te achar, a gente arruma uma cama melhor que essa.",
-				"table": "Júnior: A TV também tá no chiado. Já não bastava aquele vazio com cara de fita velha?",
-				"chair": "Júnior: Pronto. Um lugar pra sentar e questionar minhas escolhas entre dois portais.",
-				"toilet": "Júnior: Se isso aqui era uma dimensão condenada, achei o motivo.",
-				"sink": "Júnior: Michael falou pra consertar a bagunça. Não especificou se incluía lavar louça."
+				"mattress": "Júnior: Robson merece uma cama melhor.",
+				"table": "Júnior: Até aqui o chiado me segue.",
+				"chair": "Júnior: Uma pausa entre dois portais.",
+				"toilet": "Júnior: Achei a dimensão condenada.",
+				"sink": "Júnior: Michael não falou nada de louça."
 			}
 			ui.notify(remarks.get(nearby.id, "Pronto."))
-			if nearby.id in remarks:
-				ui.toast_time = 7.0
+			ui.toast_time = HOME_REMARK_SECONDS if nearby.id in remarks else 1.0
 	return true
 
 func run_home_checks() -> void:
 	var checks = load("res://tests/home_checks.gd").new()
 	add_child(checks)
 	await checks.run(self)
+
+func run_street_checks() -> void:
+	var checks = load("res://tests/street_checks.gd").new()
+	add_child(checks)
+	await checks.run(self)
+
+func setup_street_presentation() -> void:
+	street_fog = MeshInstance3D.new()
+	var quad = QuadMesh.new()
+	quad.size = Vector2(2, 2)
+	street_fog.mesh = quad
+	street_fog.extra_cull_margin = 16384.0
+	street_fog.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var fog_material = ShaderMaterial.new()
+	fog_material.shader = load("res://shaders/street_fog.gdshader")
+	street_fog.material_override = fog_material
+	add_child(street_fog)
+	street_fog.hide()
+	var layer = CanvasLayer.new()
+	layer.layer = 0
+	add_child(layer)
+	street_filter = ColorRect.new()
+	street_filter.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	street_filter.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	street_filter.material = ShaderMaterial.new()
+	street_filter.material.shader = load("res://shaders/street_pixels.gdshader")
+	layer.add_child(street_filter)
+	street_filter.hide()
+
+func apply_street_presentation(active: bool) -> void:
+	street_filter.visible = active
+	street_fog.visible = active
+	if not active:
+		return
+	var env = void_environment.environment
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color("192326")
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("9aaea8")
+	env.ambient_light_energy = .62
+	env.fog_enabled = true
+	env.fog_light_color = Color("283638")
+	env.fog_density = .026
+	env.fog_sky_affect = 1.0
+	void_sun.light_color = Color("a3b4be")
+	void_sun.light_energy = .42
+	void_sun.rotation_degrees = Vector3(-20, -55, 0)

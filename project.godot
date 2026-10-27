@@ -5,7 +5,7 @@ config/name="BONDAONDA — Dimensão Dedadão"
 run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/description="Abertura no void VHS e dimensão Dedadão. Feito em Godot."
-config/version="0.5-portal-home"
+config/version="0.6-dark-street"
 config/use_custom_user_dir=true
 config/custom_user_dir_name="runtime"
 

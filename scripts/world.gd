@@ -14,6 +14,8 @@ var portal: Node3D
 var scene_kind = ""
 var home: Node3D
 var clock = 0.0
+var extended_street = false
+var traffic_extent = 55.0
 var moving_taxi = false
 var taxi_origin = Vector3.ZERO
 var taxi_progress = 0.0
@@ -228,32 +230,49 @@ func car(pos: Vector3, color: Color, is_taxi: bool = false) -> Node3D:
 	var c = Node3D.new()
 	add_child(c)
 	c.position = pos
-	profile_mesh(c, [Vector2(-1.9, .35), Vector2(1.85, .35), Vector2(1.95, .65), Vector2(1.6, .89), Vector2(.9, .93), Vector2(-1.45, .88), Vector2(-1.9, .72)], 1.6, color)
-	profile_mesh(c, [Vector2(-1.3, .88), Vector2(1, .92), Vector2(.44, 1.55), Vector2(-.75, 1.55)], 1.42, color)
+	var body = Node3D.new()
+	body.name = "CarBody"
+	c.add_child(body)
+	c.set_meta("body", body)
+	c.set_meta("wheels", [])
+	c.set_meta("wheel_phase", 0.0)
+	c.set_meta("suspension_phase", pos.x * .37)
+	profile_mesh(body, [Vector2(-1.9, .35), Vector2(1.85, .35), Vector2(1.95, .65), Vector2(1.6, .89), Vector2(.9, .93), Vector2(-1.45, .88), Vector2(-1.9, .72)], 1.6, color)
+	profile_mesh(body, [Vector2(-1.3, .88), Vector2(1, .92), Vector2(.44, 1.55), Vector2(-.75, 1.55)], 1.42, color)
 	var window_profile = [Vector2(-1.16, 1.0), Vector2(.82, 1.02), Vector2(.38, 1.47), Vector2(-.69, 1.47)]
-	profile_mesh(c, window_profile, 1.435, Color("354b5b"))
-	var windshield = box(c, Vector3(.72, 1.24, 0), Vector3(.04, .7, 1.25), Color("597784"))
+	profile_mesh(body, window_profile, 1.435, Color("354b5b"))
+	var windshield = box(body, Vector3(.72, 1.24, 0), Vector3(.04, .7, 1.25), Color("597784"))
 	windshield.rotation.z = .72
-	var rear_window = box(c, Vector3(-1.02, 1.22, 0), Vector3(.04, .65, 1.25), Color("354b5b"))
+	var rear_window = box(body, Vector3(-1.02, 1.22, 0), Vector3(.04, .65, 1.25), Color("354b5b"))
 	rear_window.rotation.z = -.66
-	box(c, Vector3(0, 1.25, .76), Vector3(.08, .5, .05), color)
-	box(c, Vector3(0, 1.25, -.76), Vector3(.08, .5, .05), color)
+	box(body, Vector3(0, 1.25, .76), Vector3(.08, .5, .05), color)
+	box(body, Vector3(0, 1.25, -.76), Vector3(.08, .5, .05), color)
 	for z in [-.82, .82]:
-		box(c, Vector3(-.25, .85, z), Vector3(.28, .045, .03), Color("c4c1ac"))
-		box(c, Vector3(.55, 1.03, z * 1.13), Vector3(.2, .12, .18), color)
+		box(body, Vector3(-.25, .85, z), Vector3(.28, .045, .03), Color("c4c1ac"))
+		box(body, Vector3(.55, 1.03, z * 1.13), Vector3(.2, .12, .18), color)
+	var wheels: Array = []
 	for x in [-1.1, 1.15]:
 		for z in [-.83, .83]:
-			var wheel = cylinder(c, Vector3(x, .4, z), .36, .18, Color("292930"))
+			var pivot = Node3D.new()
+			c.add_child(pivot)
+			pivot.position = Vector3(x, .4, z)
+			var wheel = cylinder(pivot, Vector3.ZERO, .36, .18, Color("292930"))
 			wheel.rotation.x = PI / 2
-			var hub = cylinder(c, Vector3(x, .4, z * 1.1), .17, .02, Color("b2aaa0"))
+			var outside = .115 if z > 0 else -.115
+			var hub = cylinder(pivot, Vector3(0, 0, outside), .20, .02, Color("78827e"))
 			hub.rotation.x = PI / 2
+			box(pivot, Vector3(0, 0, outside * 1.1), Vector3(.34, .045, .02), Color("d2cbb7"))
+			box(pivot, Vector3(0, 0, outside * 1.1), Vector3(.045, .34, .02), Color("d2cbb7"))
+			wheels.append(pivot)
+	c.set_meta("wheels", wheels)
 	for z in [-.55, .55]:
-		box(c, Vector3(1.86, .73, z), Vector3(.02, .24, .32), Color("ffdd9e"))
-		box(c, Vector3(-1.86, .73, z), Vector3(.02, .24, .32), Color("b84c42"))
-	box(c, Vector3(1.9, .42, 0), Vector3(.1, .17, 1.5), Color("b6b4a6"))
+		var lamp = box(body, Vector3(1.86, .73, z), Vector3(.02, .24, .32), Color("ffdd9e"))
+		lamp.material_override = material(Color("ffdd9e"), "", 1.0)
+		box(body, Vector3(-1.86, .73, z), Vector3(.02, .24, .32), Color("b84c42"))
+	box(body, Vector3(1.9, .42, 0), Vector3(.1, .17, 1.5), Color("b6b4a6"))
 	if is_taxi:
-		box(c, Vector3(0, 1.69, 0), Vector3(.7, .27, .38), Color("f1e8c9"))
-		text3(c, "TÁXI", Vector3(0, 1.69, .21), 23, Color("292b39"))
+		box(body, Vector3(0, 1.69, 0), Vector3(.7, .27, .38), Color("f1e8c9"))
+		text3(body, "TÁXI", Vector3(0, 1.69, .21), 23, Color("292b39"))
 	return c
 
 func fence(pos: Vector3, length: float) -> void:
@@ -262,12 +281,12 @@ func fence(pos: Vector3, length: float) -> void:
 		box(self, pos + Vector3(i * .5 - length / 2, .73, .04), Vector3(.08, 1.5, .14), Color("725b4f"))
 
 func neighborhood() -> void:
-	box(self, Vector3(0, -.27, 0), Vector3(120, .5, 72), Color("8d9164"), true, "grass")
-	box(self, Vector3(0, .005, 0), Vector3(114, .03, 8), Color("6b6570"), false, "asphalt")
+	box(self, Vector3(0, -.27, 0), Vector3(680 if extended_street else 120, .5, 72), Color("8d9164"), true, "grass")
+	box(self, Vector3(0, .005, 0), Vector3(680 if extended_street else 114, .03, 8), Color("6b6570"), false, "asphalt")
 	for side in [-1, 1]:
-		box(self, Vector3(0, .08, side * 5.6), Vector3(112, .16, 3.2), Color("b7aaa1"), true, "pavement")
-		box(self, Vector3(0, .09, side * 4.08), Vector3(113, .2, .17), Color("e2d0b5"))
-	for x in range(-52, 54, 5):
+		box(self, Vector3(0, .08, side * 5.6), Vector3(680 if extended_street else 112, .16, 3.2), Color("b7aaa1"), true, "pavement")
+		box(self, Vector3(0, .09, side * 4.08), Vector3(680 if extended_street else 113, .2, .17), Color("e2d0b5"))
+	for x in range(-335 if extended_street else -52, 336 if extended_street else 54, 5):
 		box(self, Vector3(x, .035, 0), Vector3(2.4, .015, .12), Color("ead29c"))
 	for x in [-26, 22]:
 		for z in range(-3, 4):
@@ -329,10 +348,21 @@ func neighborhood() -> void:
 		var tag = text3(a, entry.name, Vector3(0, 2.3, 0), 20)
 		tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		tag.visibility_range_end = 12
-	for x in [-58, 58]:
-		box(self, Vector3(x, 3, 0), Vector3(1, 6, 70), Color("897e7d"), true, "brick")
-	for z in [-28, 28]:
-		box(self, Vector3(0, 3, z), Vector3(116, 6, 1), Color("897e7d"), true, "brick")
+	if extended_street:
+		traffic_extent = 320.0
+		var extension = load("res://scripts/street_extension.gd").new()
+		extension.name = "StreetExtension"
+		add_child(extension)
+		extension.build(self)
+		var dressing = load("res://scripts/street_dressing.gd").new()
+		dressing.name = "StreetDressing"
+		add_child(dressing)
+		dressing.build(self)
+	else:
+		for x in [-58, 58]:
+			box(self, Vector3(x, 3, 0), Vector3(1, 6, 70), Color("897e7d"), true, "brick")
+		for z in [-28, 28]:
+			box(self, Vector3(0, 3, z), Vector3(116, 6, 1), Color("897e7d"), true, "brick")
 
 func interior(kind: String) -> void:
 	if kind == "home":
@@ -458,14 +488,15 @@ func _physics_process(dt: float) -> void:
 		var c: Node3D = entry.node
 		var old_position = c.position
 		c.position.x += entry.speed * entry.dir * dt
+		animate_vehicle(c, entry.speed, dt)
 		if traffic_enabled and is_instance_valid(pedestrian):
 			var bounds = AABB(Vector3(-2.16, -1.82, -1.04), Vector3(4.32, 3.42, 2.08))
 			var contact = bounds.intersects_segment(previous_pedestrian - old_position, pedestrian.position - c.position)
 			if contact != null:
 				traffic_enabled = false
 				car_hit.emit()
-		if abs(c.position.x) > 55:
-			c.position.x = -55 * entry.dir
+		if abs(c.position.x) > traffic_extent:
+			c.position.x = -traffic_extent * entry.dir
 	if is_instance_valid(pedestrian):
 		previous_pedestrian = pedestrian.position
 	for a in actors:
@@ -494,8 +525,28 @@ func _physics_process(dt: float) -> void:
 
 func _process(dt: float) -> void:
 	clock += dt
-	if moving_taxi and is_instance_valid(taxi):
-		taxi_progress = minf(taxi_progress + dt * 1.0, 28.0)
-		taxi.position.x = -8 + taxi_progress
+	if is_instance_valid(taxi):
+		var taxi_speed = 0.0
+		if moving_taxi:
+			var previous_x = taxi.position.x
+			taxi_progress = minf(taxi_progress + dt * 1.0, 28.0)
+			taxi.position.x = -8 + taxi_progress
+			taxi_speed = maxf(0.0, (taxi.position.x - previous_x) / maxf(dt, .0001))
+		animate_vehicle(taxi, taxi_speed, dt)
 	if is_instance_valid(portal):
 		portal.rotation.y = sin(clock * .5) * .12
+
+func animate_vehicle(vehicle: Node3D, speed: float, dt: float) -> void:
+	var wheel_phase: float = vehicle.get_meta("wheel_phase", 0.0)
+	wheel_phase = fmod(wheel_phase - speed * dt / .36, TAU)
+	vehicle.set_meta("wheel_phase", wheel_phase)
+	for wheel in vehicle.get_meta("wheels", []):
+		wheel.rotation.z = wheel_phase
+	var phase: float = vehicle.get_meta("suspension_phase", 0.0)
+	phase += dt * (3.0 + speed * 1.4)
+	vehicle.set_meta("suspension_phase", phase)
+	var amount = clampf(speed / 4.0, 0.0, 1.0)
+	var body: Node3D = vehicle.get_meta("body")
+	body.position.y = sin(phase) * lerpf(.002, .025, amount)
+	body.rotation.z = sin(phase * .7) * .012 * amount
+	body.rotation.x = cos(phase * .53) * .008 * amount

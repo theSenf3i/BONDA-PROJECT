@@ -151,6 +151,14 @@ func run(g: Node) -> void:
 	g.player.position = Vector3(0, .1, 4.5)
 	g.interact()
 	check("House exit still leads to neighborhood", g.stage == "neighborhood")
+	check("Portal-home route enters dark extended street", g.world.extended_street and g.street_filter.visible and g.street_fog.visible)
+	while not g.visits.papers.is_empty():
+		g.player.position = g.visits.papers[0].node.position
+		g.interact()
+	g.player.position = Vector3(-8, .2, 4.5)
+	g.interact()
+	check("Full route reaches taxi dialogue", g.stage == "taxi" and g.state == "dialogue" and g.world.moving_taxi)
+
 	var invalid_save = FileAccess.open("res://save/checkpoint.json", FileAccess.WRITE)
 	invalid_save.store_string("invalid")
 	invalid_save.close()
