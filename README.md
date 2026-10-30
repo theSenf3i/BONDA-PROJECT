@@ -20,6 +20,29 @@
 
 </div>
 
+## ⬇️ Download Rápido (Pronto para Jogar)
+
+Escolha a versão que você deseja experimentar. Cada versão possui seu pacote oficial com motor, assets e executável embutidos — basta baixar, extrair e jogar:
+
+| Versão | Descrição do Pacote | Download Direto (.zip) |
+| :--- | :--- | :---: |
+| 🌟 **v0.7 (Recomendada)** | **Versão de Ouro** — Letreiros 3D nítidos, trânsito urbano inteligente e clínica do Dr. Douglas | [**📦 Baixar BONDAONDA v0.7 Windows**](https://github.com/theSenf3i/BONDA-PROJECT/releases/download/v0.7/BONDAONDA-v0.7-Windows.zip) |
+| 🚗 **v0.6** | Bairro noturno ampliado, neblina volumétrica e dinâmica veicular | [📦 Baixar BONDAONDA v0.6 Windows](https://github.com/theSenf3i/BONDA-PROJECT/releases/download/v0.6/BONDAONDA-v0.6-Windows.zip) |
+| 🌌 **v0.5** | Transição fluida The Void ➔ Portal ➔ Apartamento | [📦 Baixar BONDAONDA v0.5 Windows](https://github.com/theSenf3i/BONDA-PROJECT/releases/download/v0.5/BONDAONDA-v0.5-Windows.zip) |
+| 🧹 **v0.4** | Quarto degradado pós-impacto, sistema de faxina e conquistas | [📦 Baixar BONDAONDA v0.4 Windows](https://github.com/theSenf3i/BONDA-PROJECT/releases/download/v0.4/BONDAONDA-v0.4-Windows.zip) |
+| 📼 **v0.3** | Dimensão The Void, aparição de Michael Jackson e shader VHS retrô | [📦 Baixar BONDAONDA v0.3 Windows](https://github.com/theSenf3i/BONDA-PROJECT/releases/download/v0.3/BONDAONDA-v0.3-Windows.zip) |
+| 👥 **v0.2** | Expansão urbana do bairro e pedestres da bancada do Flowdaci | [📦 Baixar BONDAONDA v0.2 Windows](https://github.com/theSenf3i/BONDA-PROJECT/releases/download/v0.2/BONDAONDA-v0.2-Windows.zip) |
+| 🥊 **v0.1** | Protótipo conceitual inicial jogável da Dimensão Dedadão | [📦 Baixar BONDAONDA v0.1 Windows](https://github.com/theSenf3i/BONDA-PROJECT/releases/download/v0.1/BONDAONDA-v0.1-Windows.zip) |
+
+> 💡 **Como Iniciar o Jogo em 3 Passos Simples:**
+> 1. Baixe o arquivo `.zip` da versão desejada na tabela acima (ou na aba [Releases](https://github.com/theSenf3i/BONDA-PROJECT/releases)).
+> 2. Descompacte a pasta no seu computador.
+> 3. Dê dois cliques no executável **`BONDAONDA.exe`** (ou use o atalho **`JOGAR.bat`**).
+> 
+> *Pronto! O jogo abrirá imediatamente sem necessidade de instalar motores ou programas adicionais.*
+
+---
+
 ## 🌌 A Jornada Multiversal & O Drama de Junior
 
 Como diria o próprio Victor Schiavon: *"Fazer jogo sozinho é uma das experiências mais insanas e recompensadoras que alguém pode ter"*. E quando essa experiência envolve o universo de BONDA, a loucura ganha proporções cósmicas.
@@ -117,14 +140,23 @@ O desenvolvimento de **BONDAONDA** foi construído de forma iterativa, com cada 
 
 ## 🚀 Como Executar o Jogo
 
+Você pode executar o jogo de duas maneiras:
+
+### Opção 1: Download Rápido (Recomendado para Jogadores)
+1. Acesse a tabela de [Download Rápido](#️-download-rápido-pronto-para-jogar) acima ou a página de [Releases](https://github.com/theSenf3i/BONDA-PROJECT/releases).
+2. Baixe o pacote `.zip` da versão desejada (ex: `BONDAONDA-v0.7-Windows.zip`).
+3. Extraia o conteúdo para uma pasta.
+4. Execute **`BONDAONDA.exe`** ou **`JOGAR.bat`**. O jogo iniciará imediatamente!
+
+### Opção 2: Código-Fonte & Edição (Para Desenvolvedores)
 1. Faça o download da **Godot Engine 4.3 Standard** em [godotengine.org](https://godotengine.org/download/).
-2. Clone o repositório ou baixe o código-fonte:
+2. Clone o repositório:
    ```bash
    git clone https://github.com/theSenf3i/BONDA-PROJECT.git
    ```
-3. Abra a Godot e clique no botão **Importar** (*Import*).
-4. Selecione o arquivo `project.godot` na pasta do projeto.
-5. Clique em **Editar** (*Edit*) ou pressione **`F5`** para iniciar a aventura!
+3. Abra a Godot e clique em **Importar** (*Import*).
+4. Selecione o arquivo `project.godot` na pasta raiz.
+5. Clique em **Editar** (*Edit*) ou pressione **`F5`** para testar.
 
 ---
 
